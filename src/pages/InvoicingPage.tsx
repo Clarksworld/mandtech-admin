@@ -44,7 +44,7 @@ export default function InvoicingPage() {
   const total = subtotal - discountAmount + vatAmount;
 
   const fmt = (n: number) =>
-    new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(n);
+    new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(n);
 
   const vatOptions = [
     { label: '20% (Standard)', value: 20 },
@@ -186,7 +186,7 @@ export default function InvoicingPage() {
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="font-label-bold text-[10px] text-secondary uppercase">Unit £</label>
+                      <label className="font-label-bold text-[10px] text-secondary uppercase">Unit ₦</label>
                       <input
                         type="number"
                         value={item.unitPrice}
@@ -355,7 +355,7 @@ export default function InvoicingPage() {
                   <span className="font-medium">{fmt(vatAmount)}</span>
                 </div>
                 <div className="flex justify-between font-bold text-[14px] border-t-2 border-deep-charcoal pt-2 mt-2">
-                  <span>Total GBP</span>
+                  <span>Total NGN</span>
                   <span className="text-primary">{fmt(total)}</span>
                 </div>
               </div>
