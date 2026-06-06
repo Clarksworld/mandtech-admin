@@ -1,0 +1,144 @@
+import React, { useState } from 'react';
+
+type TabType = 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects';
+
+interface LayoutProps {
+  activeTab: TabType;
+  onTabChange: (tab: TabType) => void;
+  children: React.ReactNode;
+  searchPlaceholder?: string;
+  onSearch?: (query: string) => void;
+}
+
+export default function Layout({
+  activeTab,
+  onTabChange,
+  children,
+  searchPlaceholder = 'Search industrial portal...',
+  onSearch,
+}: LayoutProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [notificationActive, setNotificationActive] = useState(true);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (onSearch) {
+      onSearch(query);
+    }
+  };
+
+  const navItems: { id: TabType; label: string; icon: string }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+    { id: 'leads', label: 'Leads', icon: 'person_search' },
+    { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
+    { id: 'invoicing', label: 'Invoicing', icon: 'receipt_long' },
+    { id: 'projects', label: 'Projects', icon: 'account_tree' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background text-on-surface font-body-md">
+      {/* Sidebar Navigation */}
+      <aside className="bg-deep-charcoal dark:bg-on-surface h-screen w-64 fixed left-0 top-0 border-r border-outline-variant transition-all duration-200 ease-in-out flex flex-col py-6 z-50">
+        <div className="px-6 mb-8">
+          <h1 className="font-headline-md text-headline-md text-surface-white tracking-tight">Mandtech Admin</h1>
+          <p className="text-surface-variant text-body-sm opacity-70">Technical Operations</p>
+        </div>
+
+        <nav className="flex-1 space-y-1">
+          {navItems.map((item) => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onTabChange(item.id)}
+                className={`w-[calc(100%-16px)] flex items-center px-4 py-3 transition-colors mx-2 rounded-lg text-left ${
+                  isActive
+                    ? 'bg-primary-container text-on-primary-container font-bold'
+                    : 'text-surface-variant hover:text-surface-white hover:bg-secondary'
+                }`}
+              >
+                <span 
+                  className="material-symbols-outlined mr-3"
+                  style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                >
+                  {item.icon}
+                </span>
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* User Profile Footer */}
+        <div className="px-6 mt-auto flex items-center gap-3 pt-6 border-t border-secondary/20">
+          <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden border border-outline-variant">
+            <img
+              alt="Admin User Profile"
+              className="w-full h-full object-cover"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuD638g5vs4vgW7NfhC6xcrY0rsbvdR4jvhYykohiEVdHGrpHUcNlXumhHAN813I4gyHBTM5mjDEYhVQtom3jMWW2Llb-XAbXTuE9J6Pn6wVANai42Q-X9YsNunGWXjD3iET7JsJChESehOVE90pwVbOyIS0kGx0jh4BDpcjkXusmvzvnbg_rGBv_iW4fNvhaF_TIipzISEKyzi6ub_N0uUbwcvi_5HfnDjvcY_RW6XjzOY2qX3wjYJtlchWKQsl2GU6Uz7UTt82Fvo"
+            />
+          </div>
+          <div className="overflow-hidden">
+            <p className="text-surface-white font-bold text-body-sm truncate">Alex Rivera</p>
+            <p className="text-surface-variant text-[10px] uppercase tracking-wider">System Lead</p>
+          </div>
+        </div>
+      </aside>
+
+      {/* Top Navigation Bar */}
+      <header className="fixed top-0 right-0 left-64 h-16 bg-surface dark:bg-surface-dim border-b border-outline-variant flex justify-between items-center px-gutter z-40">
+        <div className="flex items-center gap-4 flex-1">
+          <div className="relative group max-w-md w-full">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary group-focus-within:text-primary transition-colors">
+              search
+            </span>
+            <input
+              type="text"
+              placeholder={searchPlaceholder}
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full pl-10 pr-4 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-sm focus:ring-2 focus:ring-primary-container focus:border-primary outline-none transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setNotificationActive(false)}
+              className="relative p-2 text-secondary hover:text-primary transition-colors"
+            >
+              <span className="material-symbols-outlined">notifications</span>
+              {notificationActive && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full"></span>
+              )}
+            </button>
+            <button className="p-2 text-secondary hover:text-primary transition-colors">
+              <span className="material-symbols-outlined">settings</span>
+            </button>
+          </div>
+          <div className="h-6 w-px bg-outline-variant"></div>
+          <div className="flex items-center gap-4">
+            <button className="text-secondary dark:text-secondary-fixed text-body-sm hover:text-primary transition-colors">
+              Support
+            </button>
+            <button 
+              onClick={() => alert('Logging out...')}
+              className="bg-deep-charcoal text-surface-white px-4 py-2 rounded font-button text-button hover:bg-primary transition-all"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="ml-64 pt-16 min-h-screen">
+        <div className="p-gutter max-w-container-max mx-auto space-y-8">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}

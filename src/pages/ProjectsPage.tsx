@@ -1,0 +1,349 @@
+import { useState, useRef } from 'react';
+
+type KanbanStatus = 'new' | 'inprogress' | 'awaiting' | 'completed';
+
+interface KanbanCard {
+  id: string;
+  reqId: string;
+  title: string;
+  description: string;
+  priority: 'HIGH PRIORITY' | 'URGENT' | 'ROUTINE' | 'PENDING' | 'DONE';
+  assignees: string[];
+  status: KanbanStatus;
+}
+
+const initialCards: KanbanCard[] = [
+  {
+    id: 'k1',
+    reqId: 'REQ-8842',
+    title: 'Atlas Copco GA37 Routine Maintenance',
+    description: 'Quarterly filter change and oil analysis for Unit 4B.',
+    priority: 'HIGH PRIORITY',
+    assignees: ['https://lh3.googleusercontent.com/aida-public/AB6AXuBiWmi2VrxuCvAT1_AmwZtp-zd8-fbW0LCtfPbvrjGty8SfxljM9RVeqMMFDNeTovhaKE8fyRyMZ7Q86_38bSHgzCj4N3Mmti9s6qqD8COAFBkZ9qDwtt69j5fzBBl-qv9DaS9j1T6g47ba0RFw1odgogjEZE-EB6bfBDSioETSeeYvwRGhgfJYGDYXN7vMKUAknIY9UKtjW9e3B2Cj7XfSyKwUanlzB0HDmqAxpaQwqbOYE0jvf4zbCgmGLCY0tc34b6FZcJqyJUA'],
+    status: 'new',
+  },
+  {
+    id: 'k2',
+    reqId: 'REQ-9011',
+    title: 'HVAC System Calibration',
+    description: 'Precision calibration of temperature sensors in clean room area.',
+    priority: 'ROUTINE',
+    assignees: ['https://lh3.googleusercontent.com/aida-public/AB6AXuBdyBpBxS7zFEpYL6yKqImx2TPQrOSB_Q9ESvLgZWKx22lNzLiwHOGtNd49OHb1QzYrvWlmMTLMZMJs7ZY1Yu1L9_OV8m5W0iGHWeBC9vwwhG6fdePNAeF1633SQgLwSJsNiK2Umm5ARSp3JCm1XpkvIRbwKoDl8fRtSOnjMU-Ip-0DiH5c_NKX3G_ra84gXWshSBfACLlpKPPUU24xjdQSFh6pWMq18xu2uN0-Dd-4_ni4NeL0I1CbfTbc_GMOoS7zu5FCWBYX-J0'],
+    status: 'new',
+  },
+  {
+    id: 'k3',
+    reqId: 'REQ-8755',
+    title: 'Generator Lease Delivery',
+    description: 'Coordinate logistics for 500kVA Cummins unit to North Site.',
+    priority: 'URGENT',
+    assignees: [
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuAQbRp9UodzmAHE_o8OkYNoLXowqmkp_aZQ7nJkIA9V2w1alk-3O63YsoEEvVfiqc0f8zz8Vw1Zjrs_OHmmscn5xSTxYYzSxHSvmM8ygiwjx6suUBIYKHNwy-TyZ_BAfnfJO0zU9Er5aMUxHJ-JtDtB8GIDCGf34537SKW-0I7dK8ILF1TpEMxWRqQBRrXmwBQ-IRbJp-5w05n3Uazs2DlNotdPQmr9QWZ4UXLlCZ7bziFqajLlQb0xjy3LSbYAXOP1HmtL-KMwZRc',
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuCMV7g_xahnRTHVY02agTxDHXog9msm0uSD-teNLmxowGgCVGC3UwET7mOQQteKuWnOd5eqH_bBPlbobwarwqNk7svPk7iIAefErMElMZ-Rs8fP_op-jMqsawovDlteF2d49jXOeyELQDe7yGGGmSjWWsU6eENhPvjPNoQEdQzAfSZOSKwsA7c4QzE8puFKCN3hXCYXMuI0ELlzN4Uvctv7msD3nbFXfAxr3ivmsHg0esCA3byVS-obKbVJA_OAp8gQslNJIvjB30E',
+    ],
+    status: 'inprogress',
+  },
+  {
+    id: 'k4',
+    reqId: 'REQ-8201',
+    title: 'Hydraulic Press Seal Replacement',
+    description: 'Waiting for custom Viton seals from distributor. ETA: Friday.',
+    priority: 'PENDING',
+    assignees: ['https://lh3.googleusercontent.com/aida-public/AB6AXuAZhZiDQzPfR00qTjSHAJbfcHBZtcB9OHYMdM05qDiFz93O3t7ju2z09aBANX_2F9FR6yG-LH7M5rLrPDS3eX7jELNye5OQoD38ZahQhLlT2XS5EhOeDvqlnpx4dcXyye3bw38EN3Yw-npaXfr3jvCzdcSM9v7OiZI-ITrADjFjU_eoNy6IiAMXBcRXANX9_PzKkzcJfXVjaa_JifcKzmZkIoH2jymS-miCfxJhpNMEHU4aTl2TeeaLBFROQSJmOF_78Y-Y979dH6c'],
+    status: 'awaiting',
+  },
+  {
+    id: 'k5',
+    reqId: 'REQ-7994',
+    title: 'Pump Station 3 Overhaul',
+    description: 'Full bearing replacement and housing alignment completed.',
+    priority: 'DONE',
+    assignees: [],
+    status: 'completed',
+  },
+];
+
+const columns: { id: KanbanStatus; label: string; color: string }[] = [
+  { id: 'new', label: 'New Requests', color: 'border-primary-container' },
+  { id: 'inprogress', label: 'Assigned / In Progress', color: 'border-tertiary' },
+  { id: 'awaiting', label: 'Awaiting Parts', color: 'border-status-gray' },
+  { id: 'completed', label: 'Completed', color: 'border-on-tertiary-fixed-variant' },
+];
+
+const priorityStyles: Record<string, string> = {
+  'HIGH PRIORITY': 'bg-error-container text-on-error-container',
+  'URGENT': 'bg-error-container text-on-error-container',
+  'ROUTINE': 'bg-secondary-fixed text-on-secondary-fixed',
+  'PENDING': 'bg-secondary-fixed text-on-secondary-fixed',
+  'DONE': 'text-on-tertiary-fixed-variant',
+};
+
+const topAccentStyles: Record<KanbanStatus, string> = {
+  new: 'border-t-primary',
+  inprogress: 'border-t-tertiary',
+  awaiting: 'border-t-status-gray',
+  completed: 'border-t-on-tertiary-fixed-variant',
+};
+
+export default function ProjectsPage() {
+  const [cards, setCards] = useState<KanbanCard[]>(initialCards);
+  const [savingCards, setSavingCards] = useState<Set<string>>(new Set());
+  const [savedCards, setSavedCards] = useState<Set<string>>(new Set());
+  const [dragOverColumn, setDragOverColumn] = useState<KanbanStatus | null>(null);
+  const draggingCardId = useRef<string | null>(null);
+
+  const handleDragStart = (cardId: string) => {
+    draggingCardId.current = cardId;
+  };
+
+  const handleDrop = (targetStatus: KanbanStatus) => {
+    if (draggingCardId.current) {
+      setCards((prev) =>
+        prev.map((card) =>
+          card.id === draggingCardId.current ? { ...card, status: targetStatus } : card
+        )
+      );
+    }
+    draggingCardId.current = null;
+    setDragOverColumn(null);
+  };
+
+  const handleLogProgress = (cardId: string) => {
+    setSavingCards((prev) => new Set(prev).add(cardId));
+    setTimeout(() => {
+      setSavingCards((prev) => {
+        const next = new Set(prev);
+        next.delete(cardId);
+        return next;
+      });
+      setSavedCards((prev) => new Set(prev).add(cardId));
+      setTimeout(() => {
+        setSavedCards((prev) => {
+          const next = new Set(prev);
+          next.delete(cardId);
+          return next;
+        });
+      }, 2000);
+    }, 1000);
+  };
+
+  return (
+    <div className="pb-16 space-y-8">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+        <div>
+          <h2 className="font-headline-lg text-headline-lg text-deep-charcoal">
+            Engineering Project Board
+          </h2>
+          <p className="font-body-md text-body-md text-secondary mt-1">
+            Manage site operations and technical maintenance workflows.
+          </p>
+        </div>
+        <div className="flex gap-3 shrink-0">
+          <button className="flex items-center gap-2 border border-outline px-4 py-2 rounded font-button text-sm text-deep-charcoal hover:bg-surface-container-high transition-colors">
+            <span className="material-symbols-outlined text-lg">filter_list</span> Filter
+          </button>
+          <button
+            onClick={() => alert('New project dialog')}
+            className="flex items-center gap-2 bg-primary-container text-on-primary-container px-5 py-2 rounded font-button text-sm hover:shadow-md transition-all"
+          >
+            <span className="material-symbols-outlined text-lg">add</span> New Project
+          </button>
+        </div>
+      </div>
+
+      {/* Kanban Board */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {columns.map((col) => {
+          const colCards = cards.filter((c) => c.status === col.id);
+          return (
+            <div
+              key={col.id}
+              className={`flex flex-col gap-4 min-h-[300px] rounded-lg transition-all duration-200 ${
+                dragOverColumn === col.id
+                  ? 'bg-primary-container/5 ring-2 ring-dashed ring-primary p-2'
+                  : ''
+              }`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOverColumn(col.id);
+              }}
+              onDragLeave={() => setDragOverColumn(null)}
+              onDrop={() => handleDrop(col.id)}
+            >
+              {/* Column Header */}
+              <div className={`flex items-center justify-between px-2 border-b-2 pb-2 ${col.color}`}>
+                <span className="font-label-bold text-deep-charcoal uppercase text-[11px] tracking-widest flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${col.color.replace('border-', 'bg-')}`}></span>
+                  {col.label}
+                </span>
+                <span className="bg-surface-container-high text-on-surface px-2 py-0.5 rounded-full text-xs font-bold">
+                  {colCards.length}
+                </span>
+              </div>
+
+              {/* Cards */}
+              {colCards.map((card) => (
+                <div
+                  key={card.id}
+                  draggable
+                  onDragStart={() => handleDragStart(card.id)}
+                  onDragEnd={() => setDragOverColumn(null)}
+                  className={`bg-surface-white border border-outline-variant p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing border-t-4 ${topAccentStyles[card.status]} ${
+                    card.status === 'completed' ? 'grayscale opacity-70 hover:grayscale-0 hover:opacity-100' : ''
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${
+                      card.status === 'completed'
+                        ? 'bg-tertiary-fixed text-on-tertiary-fixed'
+                        : card.status === 'new'
+                        ? 'bg-primary-fixed text-on-primary-fixed'
+                        : 'bg-surface-container-high text-on-surface'
+                    }`}>
+                      {card.reqId}
+                    </span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold flex items-center gap-1 ${priorityStyles[card.priority]}`}>
+                      {card.priority === 'DONE' && (
+                        <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                      )}
+                      {card.priority}
+                    </span>
+                  </div>
+
+                  <h4 className="font-label-bold text-body-md text-deep-charcoal mb-2 leading-tight text-sm">
+                    {card.title}
+                  </h4>
+                  <p className="font-body-sm text-body-sm text-secondary mb-4 text-xs leading-relaxed">
+                    {card.description}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-outline-variant/30">
+                    <div className="flex -space-x-2">
+                      {card.assignees.map((url, i) => (
+                        <img
+                          key={i}
+                          alt="Team member"
+                          className="w-7 h-7 rounded-full border-2 border-surface-white bg-surface-container object-cover"
+                          src={url}
+                        />
+                      ))}
+                    </div>
+
+                    {card.status === 'awaiting' ? (
+                      <button className="font-button text-[11px] bg-outline/60 text-white px-3 py-1.5 rounded cursor-not-allowed opacity-50 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-sm">lock</span>
+                        On Hold
+                      </button>
+                    ) : card.status !== 'completed' ? (
+                      <button
+                        onClick={() => handleLogProgress(card.id)}
+                        className={`font-button text-[11px] px-3 py-1.5 rounded flex items-center gap-1 transition-colors duration-200 ${
+                          savedCards.has(card.id)
+                            ? 'bg-green-600 text-white'
+                            : 'bg-deep-charcoal text-white hover:bg-secondary'
+                        }`}
+                      >
+                        {savingCards.has(card.id) ? (
+                          <>
+                            <span className="material-symbols-outlined text-sm animate-spin">sync</span>
+                            Saving...
+                          </>
+                        ) : savedCards.has(card.id) ? (
+                          <>
+                            <span className="material-symbols-outlined text-sm">check</span>
+                            Saved
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-symbols-outlined text-sm">history_edu</span>
+                            Log Progress
+                          </>
+                        )}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+
+              {/* Empty column hint */}
+              {colCards.length === 0 && (
+                <div className="flex-1 flex flex-col items-center justify-center py-10 border-2 border-dashed border-outline-variant/40 rounded-lg">
+                  <span className="material-symbols-outlined text-3xl text-outline-variant/60 mb-2">
+                    inbox
+                  </span>
+                  <p className="text-xs text-secondary/60">Drop cards here</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Productivity Analytics */}
+      <section className="mt-4 bg-deep-charcoal rounded-xl p-8 text-surface-white relative overflow-hidden">
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div>
+            <h3 className="font-headline-md text-headline-md text-xl text-white mb-2">Site Productivity</h3>
+            <p className="font-body-sm text-body-sm text-surface-variant text-sm">
+              Efficiency metrics for current engineering sprint cycles.
+            </p>
+            <div className="mt-6 flex items-baseline gap-2">
+              <span className="text-4xl font-bold text-white">92%</span>
+              <span className="text-primary-container font-bold text-sm">+4.5%</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-center">
+            <div className="flex justify-between text-xs font-label-bold uppercase tracking-wider mb-2 text-surface-variant">
+              <span>Sprint Completion Rate</span>
+              <span>88/100 tasks</span>
+            </div>
+            <div className="w-full bg-secondary rounded-full h-2">
+              <div
+                className="bg-primary-container h-2 rounded-full transition-all duration-1000"
+                style={{ width: '88%' }}
+              ></div>
+            </div>
+            <div className="grid grid-cols-4 gap-2 mt-6">
+              {[
+                { label: 'New', count: cards.filter((c) => c.status === 'new').length },
+                { label: 'Active', count: cards.filter((c) => c.status === 'inprogress').length },
+                { label: 'Blocked', count: cards.filter((c) => c.status === 'awaiting').length },
+                { label: 'Done', count: cards.filter((c) => c.status === 'completed').length },
+              ].map((stat) => (
+                <div key={stat.label} className="text-center">
+                  <p className="text-2xl font-bold text-white">{stat.count}</p>
+                  <p className="text-[10px] text-surface-variant uppercase tracking-wider">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center md:justify-end">
+            <div className="flex items-end gap-1.5 h-24">
+              {[40, 65, 50, 80, 60, 92, 45].map((h, i) => (
+                <div
+                  key={i}
+                  className={`w-6 rounded-t transition-all duration-500 ${
+                    i === 5 ? 'bg-primary-container' : 'bg-secondary/40'
+                  }`}
+                  style={{ height: `${h}%` }}
+                ></div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Dot grid background */}
+        <div
+          className="absolute inset-0 opacity-5 pointer-events-none"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
+            backgroundSize: '24px 24px',
+          }}
+        ></div>
+      </section>
+    </div>
+  );
+}
