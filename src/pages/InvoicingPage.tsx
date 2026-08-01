@@ -261,14 +261,40 @@ export default function InvoicingPage() {
 
           {/* Line Items Card */}
           <div className="bg-surface-white border border-outline-variant p-6 rounded-lg shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-label-bold text-primary uppercase text-xs tracking-widest">Line Items</h3>
-              <button
-                onClick={addLineItem}
-                className="text-primary font-button text-sm flex items-center gap-1 hover:underline"
-              >
-                <span className="material-symbols-outlined text-lg">add_circle</span> Add Item
-              </button>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+              <h3 className="font-label-bold text-primary uppercase text-xs tracking-widest">Line Items & Equipment Selection</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLineItems(prev => [
+                      ...prev,
+                      { id: `li${Date.now()}`, description: 'Sullair 185 Series Heavy Duty Air Compressor', qty: 1, unitPrice: 15500000 }
+                    ]);
+                  }}
+                  className="text-[11px] bg-primary-container/20 text-primary font-bold px-2.5 py-1 rounded hover:bg-primary-container hover:text-white transition-colors"
+                >
+                  + Add Sullair 185
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLineItems(prev => [
+                      ...prev,
+                      { id: `li${Date.now()}`, description: 'High-Pressure Oil Filter (SL-98230-XP)', qty: 4, unitPrice: 48000 }
+                    ]);
+                  }}
+                  className="text-[11px] bg-primary-container/20 text-primary font-bold px-2.5 py-1 rounded hover:bg-primary-container hover:text-white transition-colors"
+                >
+                  + Add Oil Filter
+                </button>
+                <button
+                  onClick={addLineItem}
+                  className="text-primary font-button text-sm flex items-center gap-1 hover:underline font-bold"
+                >
+                  <span className="material-symbols-outlined text-lg">add_circle</span> Custom Item
+                </button>
+              </div>
             </div>
             <div className="space-y-3">
               {lineItems.map((item) => (

@@ -1,10 +1,19 @@
 
 
+import { useState, useEffect } from 'react';
+import { checkBackendHealth } from '../services/authService';
+
 interface DashboardPageProps {
   onNavigate?: (tab: 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects') => void;
 }
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
+  const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    checkBackendHealth().then(setApiOnline);
+  }, []);
+  
   const incomingRequests = [
     {
       id: 1,
@@ -61,7 +70,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
 
   return (
     <div className="space-y-8 animate-fade-in pb-16">
-      {/* 1. Staff Attendance Banner */}
+      {/* 1. Staff Attendance & API Banner */}
       <section className="bg-surface-white border border-outline-variant rounded-lg p-6 flex items-center justify-between shadow-sm relative overflow-hidden">
         <div className="absolute top-0 left-0 w-1 h-full bg-primary-container"></div>
         <div className="flex items-center gap-4">
@@ -71,7 +80,20 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             </span>
           </div>
           <div>
-            <p className="font-label-bold text-primary uppercase text-xs tracking-wider">Staff Attendance</p>
+            <div className="flex items-center gap-3">
+              <p className="font-label-bold text-primary uppercase text-xs tracking-wider">Staff Attendance</p>
+              {apiOnline === true && (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  REST API Online
+                </span>
+              )}
+              {apiOnline === false && (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">
+                  API Offline (Mock Mode)
+                </span>
+              )}
+            </div>
             <h2 className="font-headline-md text-headline-md mt-0.5">Logged in at 08:30 AM</h2>
           </div>
         </div>
