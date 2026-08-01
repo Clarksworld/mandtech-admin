@@ -5,6 +5,9 @@ import LeadsPage from './pages/LeadsPage';
 import InventoryPage from './pages/InventoryPage';
 import InvoicingPage from './pages/InvoicingPage';
 import ProjectsPage from './pages/ProjectsPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import { isAuthenticated } from './services/authService';
 import './index.css';
 
 type TabType = 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects';
@@ -18,6 +21,8 @@ const searchPlaceholders: Record<TabType, string> = {
 };
 
 export default function App() {
+  const [authed, setAuthed] = useState<boolean>(isAuthenticated());
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -25,6 +30,32 @@ export default function App() {
     setActiveTab(tab);
     setSearchQuery('');
   };
+
+  const handleLoginSuccess = () => {
+    setAuthed(true);
+  };
+
+  const handleLogout = () => {
+    setAuthed(false);
+    setAuthMode('login');
+  };
+
+  if (!authed) {
+    if (authMode === 'register') {
+      return (
+        <RegisterPage
+          onRegisterSuccess={handleLoginSuccess}
+          onSwitchToLogin={() => setAuthMode('login')}
+        />
+      );
+    }
+    return (
+      <LoginPage
+        onLoginSuccess={handleLoginSuccess}
+        onSwitchToRegister={() => setAuthMode('register')}
+      />
+    );
+  }
 
   const renderPage = () => {
     switch (activeTab) {
@@ -49,6 +80,7 @@ export default function App() {
       onTabChange={handleTabChange}
       searchPlaceholder={searchPlaceholders[activeTab]}
       onSearch={setSearchQuery}
+      onLogout={handleLogout}
     >
       {renderPage()}
     </Layout>

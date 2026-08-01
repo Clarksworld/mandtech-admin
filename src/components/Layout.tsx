@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getStoredUser, logoutAdmin } from '../services/authService';
 
 type TabType = 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects';
 
@@ -8,6 +9,7 @@ interface LayoutProps {
   children: React.ReactNode;
   searchPlaceholder?: string;
   onSearch?: (query: string) => void;
+  onLogout?: () => void;
 }
 
 export default function Layout({
@@ -16,15 +18,25 @@ export default function Layout({
   children,
   searchPlaceholder = 'Search industrial portal...',
   onSearch,
+  onLogout,
 }: LayoutProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationActive, setNotificationActive] = useState(true);
+
+  const currentUser = getStoredUser();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
     if (onSearch) {
       onSearch(query);
+    }
+  };
+
+  const handleLogoutClick = () => {
+    logoutAdmin();
+    if (onLogout) {
+      onLogout();
     }
   };
 
@@ -72,16 +84,16 @@ export default function Layout({
 
         {/* User Profile Footer */}
         <div className="px-6 mt-auto flex items-center gap-3 pt-6 border-t border-secondary/20">
-          <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden border border-outline-variant">
-            <img
-              alt="Admin User Profile"
-              className="w-full h-full object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuD638g5vs4vgW7NfhC6xcrY0rsbvdR4jvhYykohiEVdHGrpHUcNlXumhHAN813I4gyHBTM5mjDEYhVQtom3jMWW2Llb-XAbXTuE9J6Pn6wVANai42Q-X9YsNunGWXjD3iET7JsJChESehOVE90pwVbOyIS0kGx0jh4BDpcjkXusmvzvnbg_rGBv_iW4fNvhaF_TIipzISEKyzi6ub_N0uUbwcvi_5HfnDjvcY_RW6XjzOY2qX3wjYJtlchWKQsl2GU6Uz7UTt82Fvo"
-            />
+          <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container font-bold flex items-center justify-center overflow-hidden border border-outline-variant shrink-0">
+            {currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : 'A'}
           </div>
-          <div className="overflow-hidden">
-            <p className="text-surface-white font-bold text-body-sm truncate">Alex Rivera</p>
-            <p className="text-surface-variant text-[10px] uppercase tracking-wider">System Lead</p>
+          <div className="overflow-hidden min-w-0">
+            <p className="text-surface-white font-bold text-body-sm truncate">
+              {currentUser?.email || 'admin@mandtech.com.ng'}
+            </p>
+            <span className="text-[10px] bg-primary/30 text-primary-fixed border border-primary/40 px-1.5 py-0.5 rounded font-bold uppercase">
+              {currentUser?.role || 'admin'}
+            </span>
           </div>
         </div>
       </aside>
@@ -124,8 +136,8 @@ export default function Layout({
               Support
             </button>
             <button 
-              onClick={() => alert('Logging out...')}
-              className="bg-deep-charcoal text-surface-white px-4 py-2 rounded font-button text-button hover:bg-primary transition-all"
+              onClick={handleLogoutClick}
+              className="bg-deep-charcoal text-surface-white px-4 py-2 rounded font-button text-button hover:bg-error transition-all font-bold"
             >
               Logout
             </button>
