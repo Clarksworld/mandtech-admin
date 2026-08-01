@@ -29,9 +29,9 @@ export default function App() {
   const renderPage = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardPage />;
+        return <DashboardPage onNavigate={handleTabChange} />;
       case 'leads':
-        return <LeadsPage />;
+        return <LeadsPage onNavigate={handleTabChange} />;
       case 'inventory':
         return <InventoryPage searchQuery={searchQuery} />;
       case 'invoicing':

@@ -9,7 +9,18 @@ interface Lead {
   status: 'In Progress' | 'Pending' | 'Completed';
 }
 
-export default function LeadsPage() {
+interface LeadsPageProps {
+  onNavigate?: (tab: 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects') => void;
+}
+
+interface TechQueueItem {
+  id: string;
+  title: string;
+  etaHours: number;
+  priority: 'URGENT' | 'HIGH' | 'ROUTINE';
+}
+
+export default function LeadsPage({ onNavigate }: LeadsPageProps) {
   const [leads, setLeads] = useState<Lead[]>([
     {
       id: '#REQ-8291',
@@ -54,6 +65,24 @@ export default function LeadsPage() {
   ]);
 
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [showAllLeadsModal, setShowAllLeadsModal] = useState(false);
+  const [queuePriorityFilter, setQueuePriorityFilter] = useState<'ALL' | 'URGENT' | 'HIGH' | 'ROUTINE'>('ALL');
+  const [queueSort, setQueueSort] = useState<'ETA_ASC' | 'PRIORITY_DESC'>('ETA_ASC');
+
+  const [techQueueItems] = useState<TechQueueItem[]>([
+    { id: 'tq1', title: 'Hydraulic System Spec', etaHours: 2, priority: 'URGENT' },
+    { id: 'tq2', title: 'Structural Load Data', etaHours: 4, priority: 'HIGH' },
+    { id: 'tq3', title: 'Turbine Vibration Diagnostics', etaHours: 1, priority: 'URGENT' },
+    { id: 'tq4', title: 'Electrical Panel Calibration', etaHours: 6, priority: 'ROUTINE' },
+  ]);
+
+  const filteredTechQueue = techQueueItems
+    .filter((item) => (queuePriorityFilter === 'ALL' ? true : item.priority === queuePriorityFilter))
+    .sort((a, b) => {
+      if (queueSort === 'ETA_ASC') return a.etaHours - b.etaHours;
+      const priorityMap = { URGENT: 3, HIGH: 2, ROUTINE: 1 };
+      return priorityMap[b.priority] - priorityMap[a.priority];
+    });
 
   const handleClaimLead = (leadId: string) => {
     setLeads((prevLeads) =>
@@ -82,8 +111,11 @@ export default function LeadsPage() {
           </p>
         </div>
         <div className="flex gap-3 shrink-0">
-          <button className="bg-surface-white border border-outline text-on-surface px-4 py-2 rounded font-button text-sm hover:bg-surface-container-low transition-colors flex items-center gap-2">
-            <span className="material-symbols-outlined text-lg">filter_list</span> Filter
+          <button 
+            onClick={() => setShowAllLeadsModal(true)}
+            className="bg-surface-white border border-primary text-primary px-4 py-2 rounded font-button text-sm hover:bg-primary-container/10 transition-colors flex items-center gap-2 font-bold shadow-sm"
+          >
+            <span className="material-symbols-outlined text-lg">list_alt</span> View All Leads (142)
           </button>
           <button 
             onClick={() => alert('New lead form dialog')}
@@ -126,7 +158,10 @@ export default function LeadsPage() {
             <p className="font-label-bold text-surface-variant uppercase text-xs tracking-wider">Unclaimed Handoffs</p>
             <h3 className="font-headline-xl text-headline-xl mt-1">07</h3>
           </div>
-          <button className="z-10 mt-6 border border-surface-variant text-surface-white px-4 py-2 rounded font-button text-sm hover:bg-secondary transition-colors w-full">
+          <button 
+            onClick={() => setShowAllLeadsModal(true)}
+            className="z-10 mt-6 border border-surface-variant text-surface-white px-4 py-2 rounded font-button text-sm hover:bg-secondary transition-colors w-full"
+          >
             View Urgent Queue
           </button>
           {/* Abstract industrial background pattern */}
@@ -139,14 +174,23 @@ export default function LeadsPage() {
       {/* Main Data Table Container */}
       <div className="bg-surface-white border border-outline rounded overflow-hidden">
         <div className="p-4 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
-          <span className="font-label-bold text-label-bold text-on-surface-variant text-xs">
+          <span className="font-label-bold text-label-bold text-on-surface-variant text-xs flex items-center gap-2">
             ACTIVE LEAD REPOSITORY
+            <span className="bg-primary-container text-on-primary-container px-2 py-0.5 rounded text-[10px] font-bold">
+              Showing Active ({leads.length})
+            </span>
           </span>
           <div className="flex gap-2">
-            <button className="p-1 hover:bg-surface-container-high rounded transition-colors">
+            <button 
+              onClick={() => setShowAllLeadsModal(true)}
+              className="bg-primary text-white text-xs px-3 py-1 rounded font-bold hover:opacity-90 flex items-center gap-1 transition-opacity"
+            >
+              <span className="material-symbols-outlined text-sm">open_in_full</span> View All 142 Leads
+            </button>
+            <button className="p-1 hover:bg-surface-container-high rounded transition-colors" title="Refresh list">
               <span className="material-symbols-outlined text-secondary">refresh</span>
             </button>
-            <button className="p-1 hover:bg-surface-container-high rounded transition-colors">
+            <button className="p-1 hover:bg-surface-container-high rounded transition-colors" title="Export CSV">
               <span className="material-symbols-outlined text-secondary">download</span>
             </button>
           </div>
@@ -252,40 +296,96 @@ export default function LeadsPage() {
       {/* Bento Grid - Supplementary Info */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Technical Queue */}
-        <div className="bg-surface-white border border-outline rounded-xl p-6 h-64 flex flex-col justify-between">
+        <div className="bg-surface-white border border-outline rounded-xl p-6 min-h-64 flex flex-col justify-between shadow-sm">
           <div>
-            <h4 className="font-headline-md text-headline-md text-lg">Technical Queue</h4>
-            <p className="font-body-sm text-body-sm text-secondary text-xs mt-1">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h4 className="font-headline-md text-headline-md text-lg">Technical Queue</h4>
+              <span className="bg-primary-container/20 text-primary font-bold text-[10px] px-2 py-0.5 rounded-full">
+                {filteredTechQueue.length} Pending
+              </span>
+            </div>
+            <p className="font-body-sm text-body-sm text-secondary text-xs">
               High-priority requests requiring engineering validation before handoff.
             </p>
+
+            {/* Filter and Sort Controls */}
+            <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-outline-variant text-[11px]">
+              <div className="flex items-center gap-1">
+                <span className="text-secondary font-bold">Filter:</span>
+                <select
+                  value={queuePriorityFilter}
+                  onChange={(e) => setQueuePriorityFilter(e.target.value as any)}
+                  className="bg-surface-container border border-outline-variant rounded px-1.5 py-0.5 text-xs outline-none"
+                >
+                  <option value="ALL">All Priorities</option>
+                  <option value="URGENT">Urgent</option>
+                  <option value="HIGH">High</option>
+                  <option value="ROUTINE">Routine</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-secondary font-bold">Sort:</span>
+                <select
+                  value={queueSort}
+                  onChange={(e) => setQueueSort(e.target.value as any)}
+                  className="bg-surface-container border border-outline-variant rounded px-1.5 py-0.5 text-xs outline-none"
+                >
+                  <option value="ETA_ASC">Fastest ETA</option>
+                  <option value="PRIORITY_DESC">Highest Priority</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div className="space-y-3 mt-4 flex-1">
-            <div className="flex items-center gap-3 p-2 border-l-2 border-primary bg-surface-container-low">
-              <div className="flex-1">
-                <p className="font-label-bold text-label-bold text-xs">Hydraulic System Spec</p>
-                <p className="text-[10px] text-secondary">ETA: 2 Hours</p>
+
+          <div className="space-y-2 mt-3 flex-1 overflow-y-auto max-h-40 pr-1">
+            {filteredTechQueue.map((item) => (
+              <div
+                key={item.id}
+                className={`flex items-center gap-3 p-2.5 rounded border-l-4 ${
+                  item.priority === 'URGENT'
+                    ? 'border-l-error bg-error-container/10'
+                    : item.priority === 'HIGH'
+                    ? 'border-l-primary bg-primary-container/10'
+                    : 'border-l-secondary bg-surface-container-low'
+                }`}
+              >
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <p className="font-label-bold text-label-bold text-xs">{item.title}</p>
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase ${
+                        item.priority === 'URGENT'
+                          ? 'bg-error text-white'
+                          : item.priority === 'HIGH'
+                          ? 'bg-primary text-white'
+                          : 'bg-secondary/20 text-secondary'
+                      }`}
+                    >
+                      {item.priority}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-secondary mt-0.5 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs">schedule</span> ETA: {item.etaHours} {item.etaHours === 1 ? 'Hour' : 'Hours'}
+                  </p>
+                </div>
               </div>
-              <span className="material-symbols-outlined text-primary text-lg">priority_high</span>
-            </div>
-            <div className="flex items-center gap-3 p-2 border-l-2 border-tertiary bg-surface-container-low">
-              <div className="flex-1">
-                <p className="font-label-bold text-label-bold text-xs">Structural Load Data</p>
-                <p className="text-[10px] text-secondary">ETA: 4 Hours</p>
-              </div>
-            </div>
+            ))}
+            {filteredTechQueue.length === 0 && (
+              <p className="text-xs text-secondary italic py-4 text-center">No queue items match filter.</p>
+            )}
           </div>
         </div>
 
         {/* Admin Productivity */}
-        <div className="bg-surface-white border border-outline rounded-xl p-6 h-64 flex flex-col">
+        <div className="bg-surface-white border border-outline rounded-xl p-6 min-h-64 flex flex-col justify-between shadow-sm">
           <h4 className="font-headline-md text-headline-md text-lg mb-2">Admin Productivity</h4>
           <div className="flex-1 flex items-end gap-2 px-2">
-            <div className="w-1/4 bg-primary-fixed-dim h-1/2 rounded-t"></div>
-            <div className="w-1/4 bg-primary h-3/4 rounded-t"></div>
-            <div className="w-1/4 bg-tertiary-fixed-dim h-full rounded-t"></div>
-            <div className="w-1/4 bg-primary h-2/3 rounded-t"></div>
+            <div className="w-1/4 bg-primary-fixed-dim h-1/2 rounded-t flex items-center justify-center text-[10px] font-bold text-primary">12</div>
+            <div className="w-1/4 bg-primary h-3/4 rounded-t flex items-center justify-center text-[10px] font-bold text-white">28</div>
+            <div className="w-1/4 bg-tertiary-fixed-dim h-full rounded-t flex items-center justify-center text-[10px] font-bold text-tertiary">35</div>
+            <div className="w-1/4 bg-primary h-2/3 rounded-t flex items-center justify-center text-[10px] font-bold text-white">22</div>
           </div>
-          <div className="mt-4 flex justify-between font-label-bold text-[10px] text-secondary px-2">
+          <div className="mt-4 flex justify-between font-label-bold text-[10px] text-secondary px-2 border-t border-outline-variant pt-2">
             <span>MON</span>
             <span>TUE</span>
             <span>WED</span>
@@ -294,7 +394,7 @@ export default function LeadsPage() {
         </div>
 
         {/* Inventory Sync */}
-        <div className="bg-deep-charcoal rounded-xl p-6 h-64 relative overflow-hidden text-surface-white flex flex-col justify-between">
+        <div className="bg-deep-charcoal rounded-xl p-6 min-h-64 relative overflow-hidden text-surface-white flex flex-col justify-between shadow-md">
           <img
             alt="Industrial Warehouse"
             className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay pointer-events-none"
@@ -307,7 +407,10 @@ export default function LeadsPage() {
             </p>
           </div>
           <div className="relative z-10">
-            <button className="bg-white text-deep-charcoal font-button text-sm px-4 py-2 rounded-full flex items-center gap-2 hover:bg-primary-container hover:text-white transition-colors duration-200 shadow">
+            <button 
+              onClick={() => onNavigate?.('inventory')}
+              className="bg-white text-deep-charcoal font-button text-sm px-4 py-2.5 rounded-full flex items-center gap-2 hover:bg-primary-container hover:text-white transition-all duration-200 shadow hover:scale-105 active:scale-95 cursor-pointer font-bold"
+            >
               Launch Catalog <span className="material-symbols-outlined text-base">open_in_new</span>
             </button>
           </div>
@@ -471,6 +574,81 @@ export default function LeadsPage() {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View All Leads Modal */}
+      {showAllLeadsModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            onClick={() => setShowAllLeadsModal(false)}
+            className="absolute inset-0 bg-deep-charcoal/70 backdrop-blur-[4px] transition-opacity"
+          ></div>
+          <div className="bg-surface-white w-full max-w-5xl max-h-[85vh] rounded-xl shadow-2xl flex flex-col overflow-hidden border border-outline z-10 animate-fade-in">
+            <div className="p-6 bg-deep-charcoal text-surface-white flex items-center justify-between">
+              <div>
+                <h3 className="font-headline-md text-headline-md text-xl text-white">Full Active Leads Database</h3>
+                <p className="text-surface-variant font-body-sm text-xs mt-1">Total 142 Active Requests Registered across All Hubs</p>
+              </div>
+              <button
+                onClick={() => setShowAllLeadsModal(false)}
+                className="text-surface-variant hover:text-white transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-4 flex-grow bg-surface-container-lowest">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-surface-container text-secondary text-xs uppercase font-label-bold">
+                  <tr>
+                    <th className="px-4 py-3">ID</th>
+                    <th className="px-4 py-3">Company</th>
+                    <th className="px-4 py-3">Customer</th>
+                    <th className="px-4 py-3">Assigned Admin</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant text-xs">
+                  {leads.concat([
+                    { id: '#REQ-8320', company: 'Metro Mining Equipment', customer: 'David Vance', assignedAdmin: 'Jack Kern', assignedInitials: 'JK', status: 'In Progress' },
+                    { id: '#REQ-8324', company: 'Apex Energy Systems', customer: 'Julia Roberts', assignedAdmin: 'Unassigned', assignedInitials: '', status: 'Pending' },
+                    { id: '#REQ-8331', company: 'Titan Hydraulics', customer: 'Marcus Brody', assignedAdmin: 'Sarah Lund', assignedInitials: 'SL', status: 'Completed' },
+                    { id: '#REQ-8338', company: 'Starlight Tech Ltd', customer: 'Anna Wang', assignedAdmin: 'Alex Miller', assignedInitials: 'AM', status: 'In Progress' },
+                  ]).map((lead) => (
+                    <tr key={lead.id} className="hover:bg-surface-container-low">
+                      <td className="px-4 py-3 font-bold text-primary">{lead.id}</td>
+                      <td className="px-4 py-3 font-semibold">{lead.company}</td>
+                      <td className="px-4 py-3 text-secondary">{lead.customer}</td>
+                      <td className="px-4 py-3">{lead.assignedAdmin}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          lead.status === 'In Progress' ? 'bg-tertiary-fixed text-on-tertiary-container' : lead.status === 'Pending' ? 'bg-primary-fixed text-on-primary-container' : 'bg-surface-container-highest text-secondary'
+                        }`}>{lead.status}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => { setSelectedLead(lead); setShowAllLeadsModal(false); }}
+                          className="text-primary hover:underline font-bold text-xs"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="p-4 border-t border-outline-variant bg-surface-white flex justify-between items-center text-xs">
+              <span className="text-secondary">Showing 9 of 142 total leads</span>
+              <button
+                onClick={() => setShowAllLeadsModal(false)}
+                className="bg-deep-charcoal text-white px-5 py-2 rounded font-button hover:opacity-90"
+              >
+                Close Repository View
+              </button>
             </div>
           </div>
         </div>

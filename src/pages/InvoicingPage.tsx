@@ -12,6 +12,15 @@ export default function InvoicingPage() {
   const [clientContact, setClientContact] = useState('Sarah Jenkins');
   const [emailAddress, setEmailAddress] = useState('s.jenkins@apex-mfg.com');
   const [billingAddress, setBillingAddress] = useState('44 Industrial Parkway, North Wing, Manchester, M17 1BR');
+  
+  // Reviewer Requested Fields
+  const [poNumber, setPoNumber] = useState('PO-2024-9941');
+  const [paymentTerms, setPaymentTerms] = useState('Net 30 Days');
+  const [dueDate, setDueDate] = useState('2026-08-31');
+  const [requiresShipping, setRequiresShipping] = useState(true);
+  const [shippingAddress, setShippingAddress] = useState('Mandtech Logistics Hub 4, Sector 7, Manchester, M17 1BR');
+  const [mandtechContact, setMandtechContact] = useState('Alex Thorne (Mandtech Dispatch Lead)');
+
   const [discount, setDiscount] = useState(5);
   const [vatRate, setVatRate] = useState(20);
   const [incoterms, setIncoterms] = useState('DDP - Delivered Duty Paid');
@@ -58,6 +67,19 @@ export default function InvoicingPage() {
     'CIF - Cost, Insurance and Freight',
   ];
 
+  const paymentTermsOptions = [
+    'Due on Receipt',
+    'Net 15 Days',
+    'Net 30 Days',
+    'Net 60 Days',
+  ];
+
+  const mandtechRepOptions = [
+    'Alex Thorne (Mandtech Dispatch Lead)',
+    'David Miller (Site Logistics Mgr)',
+    'Sarah Lund (Ops Coordinator)',
+  ];
+
   return (
     <div className="pb-0">
       {/* Page Header */}
@@ -91,7 +113,7 @@ export default function InvoicingPage() {
           <div className="bg-surface-white border border-outline-variant p-6 rounded-lg relative shadow-sm">
             <div className="absolute top-0 left-0 w-full h-1 bg-primary-container rounded-t-lg"></div>
             <h3 className="font-label-bold text-primary uppercase text-xs tracking-widest mb-4">
-              Customer Information
+              Customer & Order Metadata
             </h3>
             <div className="space-y-4">
               <div>
@@ -105,7 +127,50 @@ export default function InvoicingPage() {
                   className="w-full bg-surface border border-outline-variant p-2.5 rounded text-sm focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-colors"
                 />
               </div>
+
+              {/* PO Number & Payment Terms Row */}
               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="font-label-bold text-deep-charcoal block mb-1 text-[11px] uppercase tracking-wider">
+                    PO Number #
+                  </label>
+                  <input
+                    type="text"
+                    value={poNumber}
+                    onChange={(e) => setPoNumber(e.target.value)}
+                    placeholder="e.g. PO-9941"
+                    className="w-full bg-surface border border-outline-variant p-2.5 rounded text-sm font-bold text-primary focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="font-label-bold text-deep-charcoal block mb-1 text-[11px] uppercase tracking-wider">
+                    Payment Terms
+                  </label>
+                  <select
+                    value={paymentTerms}
+                    onChange={(e) => setPaymentTerms(e.target.value)}
+                    className="w-full bg-surface border border-outline-variant p-2.5 rounded text-sm focus:border-primary-container outline-none"
+                  >
+                    {paymentTermsOptions.map((opt) => (
+                      <option key={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Due Date & Client Contact */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="font-label-bold text-deep-charcoal block mb-1 text-[11px] uppercase tracking-wider">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="w-full bg-surface border border-outline-variant p-2.5 rounded text-sm focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-colors"
+                  />
+                </div>
                 <div>
                   <label className="font-label-bold text-deep-charcoal block mb-1 text-[11px] uppercase tracking-wider">
                     Client Contact
@@ -117,18 +182,20 @@ export default function InvoicingPage() {
                     className="w-full bg-surface border border-outline-variant p-2.5 rounded text-sm focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-colors"
                   />
                 </div>
-                <div>
-                  <label className="font-label-bold text-deep-charcoal block mb-1 text-[11px] uppercase tracking-wider">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={emailAddress}
-                    onChange={(e) => setEmailAddress(e.target.value)}
-                    className="w-full bg-surface border border-outline-variant p-2.5 rounded text-sm focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-colors"
-                  />
-                </div>
               </div>
+
+              <div>
+                <label className="font-label-bold text-deep-charcoal block mb-1 text-[11px] uppercase tracking-wider">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={emailAddress}
+                  onChange={(e) => setEmailAddress(e.target.value)}
+                  className="w-full bg-surface border border-outline-variant p-2.5 rounded text-sm focus:border-primary-container focus:ring-1 focus:ring-primary-container outline-none transition-colors"
+                />
+              </div>
+
               <div>
                 <label className="font-label-bold text-deep-charcoal block mb-1 text-[11px] uppercase tracking-wider">
                   Billing Address
@@ -141,6 +208,55 @@ export default function InvoicingPage() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Physical Delivery & Shipping Details Card */}
+          <div className="bg-surface-white border border-outline-variant p-6 rounded-lg shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-label-bold text-primary uppercase text-xs tracking-widest flex items-center gap-2">
+                <span className="material-symbols-outlined text-base">local_shipping</span> Physical Delivery Logistics
+              </h3>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={requiresShipping}
+                  onChange={(e) => setRequiresShipping(e.target.checked)}
+                  className="w-4 h-4 text-primary rounded border-outline-variant focus:ring-primary"
+                />
+                <span className="text-xs font-bold text-deep-charcoal">Requires Shipping</span>
+              </label>
+            </div>
+
+            {requiresShipping && (
+              <div className="space-y-4 pt-2 border-t border-outline-variant">
+                <div>
+                  <label className="font-label-bold text-deep-charcoal block mb-1 text-[11px] uppercase tracking-wider">
+                    Shipping Address (Site / Warehouse)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    className="w-full bg-surface border border-outline-variant p-2.5 rounded text-sm focus:border-primary-container outline-none transition-colors resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-label-bold text-deep-charcoal block mb-1 text-[11px] uppercase tracking-wider flex items-center justify-between">
+                    <span>Delivery Contact (Mandtech Representative)</span>
+                    <span className="text-[10px] text-tertiary font-bold">Mandtech Dispatch</span>
+                  </label>
+                  <select
+                    value={mandtechContact}
+                    onChange={(e) => setMandtechContact(e.target.value)}
+                    className="w-full bg-surface border border-outline-variant p-2.5 rounded text-sm focus:border-primary-container outline-none font-semibold text-deep-charcoal"
+                  >
+                    {mandtechRepOptions.map((rep) => (
+                      <option key={rep}>{rep}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Line Items Card */}
@@ -271,7 +387,13 @@ export default function InvoicingPage() {
               <div>
                 <h4 className="font-headline-lg text-primary mb-0.5 text-2xl font-bold tracking-tight">INVOICE</h4>
                 <p className="text-body-sm font-bold text-xs">INV-2024-8842</p>
-                <p className="text-[11px] text-secondary">Date Issued: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                {poNumber && <p className="text-[11px] text-primary font-bold mt-0.5">PO Ref: {poNumber}</p>}
+                <p className="text-[10px] text-secondary mt-0.5">
+                  Issued: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+                <p className="text-[10px] text-secondary">
+                  Terms: <span className="font-bold text-deep-charcoal">{paymentTerms}</span> | Due: <span className="font-bold text-error">{dueDate}</span>
+                </p>
               </div>
               <div className="text-right">
                 <p className="font-bold text-xs text-on-surface">Mandtech Industrial Solutions</p>
@@ -281,8 +403,8 @@ export default function InvoicingPage() {
               </div>
             </div>
 
-            {/* Bill To Row */}
-            <div className="mt-6 grid grid-cols-2 gap-8 border-t border-b border-surface-container py-4">
+            {/* Bill To & Delivery Row */}
+            <div className="mt-6 grid grid-cols-2 gap-6 border-t border-b border-surface-container py-4">
               <div>
                 <p className="font-label-bold text-[10px] text-secondary mb-1 uppercase">Bill to:</p>
                 <p className="font-bold text-xs text-on-surface">{companyName || '—'}</p>
@@ -291,9 +413,14 @@ export default function InvoicingPage() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="font-label-bold text-[10px] text-secondary mb-1 uppercase">Delivery Terms:</p>
+                <p className="font-label-bold text-[10px] text-secondary mb-1 uppercase">Delivery Logistics:</p>
                 <p className="text-[11px] font-bold text-deep-charcoal">{incoterms}</p>
-                <p className="text-[11px] text-secondary mt-1">Contact: {emailAddress || '—'}</p>
+                <p className="text-[11px] text-primary font-bold mt-0.5">Mandtech Rep: {mandtechContact}</p>
+                {requiresShipping && (
+                  <p className="text-[10px] text-secondary mt-1 leading-tight">
+                    <span className="font-bold">Ship To:</span> {shippingAddress}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -336,7 +463,7 @@ export default function InvoicingPage() {
                 <div className="mt-5">
                   <p className="font-label-bold text-[10px] text-secondary mb-4 uppercase">Authorized Signature</p>
                   <div className="w-36 border-b border-deep-charcoal mb-1"></div>
-                  <p className="text-[10px] text-secondary italic">Alex Thorne, Operations Lead</p>
+                  <p className="text-[10px] text-secondary italic">{mandtechContact}</p>
                 </div>
               </div>
               <div className="col-span-5 space-y-1.5">
@@ -363,7 +490,7 @@ export default function InvoicingPage() {
 
             {/* Footer note */}
             <div className="mt-4 pt-4 border-t border-surface-container text-center text-[9px] text-secondary italic">
-              All technical installations are subject to Mandtech Standard Service Agreement v2.1. Payment terms: Net 30 days.
+              All technical installations are subject to Mandtech Standard Service Agreement v2.1. Payment terms: {paymentTerms}. Due Date: {dueDate}.
             </div>
           </div>
         </section>

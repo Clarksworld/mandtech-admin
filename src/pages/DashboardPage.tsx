@@ -1,6 +1,10 @@
 
 
-export default function DashboardPage() {
+interface DashboardPageProps {
+  onNavigate?: (tab: 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects') => void;
+}
+
+export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const incomingRequests = [
     {
       id: 1,
@@ -105,16 +109,25 @@ export default function DashboardPage() {
           <p className="font-headline-lg text-headline-lg mt-1">45</p>
         </div>
 
-        {/* Metric 3 */}
-        <div className="bg-surface-white border border-outline-variant rounded-lg p-6 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 border-t-4 border-t-primary-container">
+        {/* Metric 3 - Low Stock Alerts (Clickable) */}
+        <div 
+          onClick={() => onNavigate?.('inventory')}
+          className="bg-surface-white border border-outline-variant rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 border-t-4 border-t-primary-container cursor-pointer group hover:border-primary-container"
+          title="Click to view Low Stock Inventory details"
+        >
           <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-error-container rounded-lg">
+            <div className="p-2 bg-error-container rounded-lg group-hover:scale-110 transition-transform">
               <span className="material-symbols-outlined text-error">warning</span>
             </div>
-            <span className="text-error font-label-bold text-xs">Action Required</span>
+            <span className="text-error font-label-bold text-xs flex items-center gap-1 group-hover:underline">
+              Action Required <span className="material-symbols-outlined text-xs">arrow_forward</span>
+            </span>
           </div>
           <h3 className="text-secondary font-label-bold uppercase text-xs tracking-wider">Low Stock Alerts</h3>
-          <p className="font-headline-lg text-headline-lg mt-1">8</p>
+          <div className="flex items-baseline justify-between mt-1">
+            <p className="font-headline-lg text-headline-lg">8</p>
+            <span className="text-xs text-primary font-bold group-hover:underline">View Inventory &rarr;</span>
+          </div>
         </div>
       </section>
 
@@ -124,8 +137,11 @@ export default function DashboardPage() {
         <div className="lg:col-span-7 space-y-4">
           <div className="flex items-center justify-between mb-2 px-1">
             <h3 className="font-headline-md text-headline-md">Live Incoming Requests</h3>
-            <button className="text-primary font-button text-button text-sm hover:underline">
-              View All Requests
+            <button 
+              onClick={() => onNavigate?.('leads')}
+              className="text-primary font-button text-button text-sm hover:underline flex items-center gap-1"
+            >
+              View All Requests <span className="material-symbols-outlined text-sm">arrow_forward</span>
             </button>
           </div>
 
