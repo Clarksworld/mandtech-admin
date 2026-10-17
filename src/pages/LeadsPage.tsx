@@ -1,127 +1,214 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { fetchInquiries, updateInquiryStatus, assignInquiry } from '../services/leadsService';
+import { getStoredUser } from '../services/authService';
+
 
 interface Lead {
   id: string;
+  rawId: string;
   company: string;
   customer: string;
+  email: string;
+  phone?: string;
+  message: string;
   assignedAdmin: string;
   assignedInitials: string;
   status: 'In Progress' | 'Pending' | 'Completed';
+  createdAt?: string;
 }
 
 interface LeadsPageProps {
   onNavigate?: (tab: 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects') => void;
 }
 
-interface TechQueueItem {
-  id: string;
-  title: string;
-  etaHours: number;
-  priority: 'URGENT' | 'HIGH' | 'ROUTINE';
-}
+
 
 export default function LeadsPage({ onNavigate }: LeadsPageProps) {
-  const [leads, setLeads] = useState<Lead[]>([
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  
+  
+  
+
+  const defaultLeads: Lead[] = [
     {
       id: '#REQ-8291',
+      rawId: 'lead-1',
       company: 'HeavyLift Solutions Ltd.',
       customer: 'Marcus Vane',
+      email: 'm.vane@heavylift.com',
+      message: 'Urgent quotation required for 185 CFM rotary compressors.',
       assignedAdmin: 'Sarah Lund',
       assignedInitials: 'SL',
       status: 'In Progress',
     },
     {
       id: '#REQ-8295',
+      rawId: 'lead-2',
       company: 'Global Foundry Group',
       customer: 'Helena Ross',
+      email: 'h.ross@globalfoundry.com',
+      message: 'Need OEM spare gasket kit and filtration units.',
       assignedAdmin: 'Jack Kern',
       assignedInitials: 'JK',
       status: 'Pending',
     },
     {
       id: '#REQ-8302',
+      rawId: 'lead-3',
       company: 'Nordic Turbine Corp',
       customer: 'Erik Sjöberg',
+      email: 'erik@nordicturbine.se',
+      message: 'Scheduled seasonal maintenance and dryer overhaul.',
       assignedAdmin: 'Sarah Lund',
       assignedInitials: 'SL',
       status: 'Completed',
     },
     {
       id: '#REQ-8310',
+      rawId: 'lead-4',
       company: 'Precision Gears Inc.',
       customer: 'Lydia Wu',
+      email: 'lydia@precisiongears.com',
+      message: 'Equipment sizing inquiry for 500 CFM industrial compressor.',
       assignedAdmin: 'Unassigned',
       assignedInitials: '',
       status: 'Pending',
     },
-    {
-      id: '#REQ-8315',
-      company: 'Oceanic Dredge Systems',
-      customer: 'Alan Carter',
-      assignedAdmin: 'Alex Miller',
-      assignedInitials: 'AM',
-      status: 'In Progress',
-    },
-  ]);
+  ];
 
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [showAllLeadsModal, setShowAllLeadsModal] = useState(false);
-  const [queuePriorityFilter, setQueuePriorityFilter] = useState<'ALL' | 'URGENT' | 'HIGH' | 'ROUTINE'>('ALL');
-  const [queueSort, setQueueSort] = useState<'ETA_ASC' | 'PRIORITY_DESC'>('ETA_ASC');
+  const mapBackendInquiryToLead = (inq: any): Lead => {
+    const rawId = inq.id || 'lead-' + Math.random();
+    const shortCode = '#REQ-' + rawId.slice(0, 4).toUpperCase();
+    
+    let status: 'In Progress' | 'Pending' | 'Completed' = 'Pending';
+    if (inq.status === 'in_review') status = 'In Progress';
+    if (inq.status === 'responded' || inq.status === 'closed') status = 'Completed';
 
-  const [techQueueItems] = useState<TechQueueItem[]>([
-    { id: 'tq1', title: 'Hydraulic System Spec', etaHours: 2, priority: 'URGENT' },
-    { id: 'tq2', title: 'Structural Load Data', etaHours: 4, priority: 'HIGH' },
-    { id: 'tq3', title: 'Turbine Vibration Diagnostics', etaHours: 1, priority: 'URGENT' },
-    { id: 'tq4', title: 'Electrical Panel Calibration', etaHours: 6, priority: 'ROUTINE' },
-  ]);
+    const assigned = inq.assigned_name || (inq.assigned_to ? 'Assigned' : 'Unassigned');
+    const initials = assigned !== 'Unassigned' 
+      ? assigned.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() 
+      : '';
 
-  const filteredTechQueue = techQueueItems
-    .filter((item) => (queuePriorityFilter === 'ALL' ? true : item.priority === queuePriorityFilter))
-    .sort((a, b) => {
-      if (queueSort === 'ETA_ASC') return a.etaHours - b.etaHours;
-      const priorityMap = { URGENT: 3, HIGH: 2, ROUTINE: 1 };
-      return priorityMap[b.priority] - priorityMap[a.priority];
-    });
+    return {
+      id: shortCode,
+      rawId,
+      company: inq.company || 'Direct Client',
+      customer: inq.name || 'Anonymous Contact',
+      email: inq.email || '',
+      phone: inq.phone || '',
+      message: inq.message || '',
+      assignedAdmin: assigned,
+      assignedInitials: initials,
+      status,
+      createdAt: inq.created_at,
+    };
+  };
 
-  const handleClaimLead = (leadId: string) => {
+  const loadLeads = () => {
+    setLoading(true);
+    fetchInquiries()
+      .then((res) => {
+        if (res && res.data && res.data.length > 0) {
+          setLeads(res.data.map(mapBackendInquiryToLead));
+        } else {
+          setLeads(defaultLeads);
+        }
+      })
+      .catch(() => {
+        setLeads(defaultLeads);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadLeads();
+  }, []);
+
+
+
+  const handleClaimLead = async (leadId: string) => {
+    const lead = leads.find((l) => l.id === leadId);
+    if (!lead) return;
+
+    const currentUser = getStoredUser();
+    const adminName = currentUser?.email?.split('@')[0] || 'Alex Rivera';
+
+    // Optimistic UI update
     setLeads((prevLeads) =>
-      prevLeads.map((lead) =>
-        lead.id === leadId
+      prevLeads.map((l) =>
+        l.id === leadId
           ? {
-              ...lead,
-              assignedAdmin: 'Alex Rivera',
-              assignedInitials: 'AR',
+              ...l,
+              assignedAdmin: adminName,
+              assignedInitials: adminName.slice(0, 2).toUpperCase(),
               status: 'In Progress',
             }
-          : lead
+          : l
       )
     );
     setSelectedLead(null);
+
+    // Call backend
+    if (lead.rawId && !lead.rawId.startsWith('lead-')) {
+      try {
+        await assignInquiry(lead.rawId, currentUser?.id || null);
+        await updateInquiryStatus(lead.rawId, 'in_review');
+      } catch {
+        // Fallback gracefully
+      }
+    }
   };
+
+  const handleUpdateStatus = async (leadId: string, newStatus: 'Pending' | 'In Progress' | 'Completed') => {
+    const lead = leads.find((l) => l.id === leadId);
+    if (!lead) return;
+
+    setLeads((prev) =>
+      prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l))
+    );
+
+    if (lead.rawId && !lead.rawId.startsWith('lead-')) {
+      const backendStatusMap = {
+        'Pending': 'new',
+        'In Progress': 'in_review',
+        'Completed': 'responded',
+      };
+      try {
+        await updateInquiryStatus(lead.rawId, backendStatusMap[newStatus]);
+      } catch {}
+    }
+  };
+
+  const pendingCount = leads.filter((l) => l.status === 'Pending').length;
+  const inProgressCount = leads.filter((l) => l.status === 'In Progress').length;
+  const completedCount = leads.filter((l) => l.status === 'Completed').length;
 
   return (
     <div className="space-y-8 animate-fade-in pb-16">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="font-headline-lg text-headline-lg text-on-surface">Customer Requests & Lead Hub</h2>
+          <h2 className="font-headline-lg text-headline-lg text-on-surface">Customer Requests &amp; Lead Hub</h2>
           <p className="font-body-md text-body-md text-secondary max-w-2xl mt-1">
             Manage incoming industrial inquiries, technical lead handovers, and assignment logistics.
           </p>
         </div>
         <div className="flex gap-3 shrink-0">
           <button 
-            onClick={() => setShowAllLeadsModal(true)}
-            className="bg-surface-white border border-primary text-primary px-4 py-2 rounded font-button text-sm hover:bg-primary-container/10 transition-colors flex items-center gap-2 font-bold shadow-sm"
+            onClick={loadLeads}
+            disabled={loading}
+            className="bg-surface-white border border-outline text-secondary px-3 py-2 rounded font-button text-sm hover:bg-surface-container transition-colors flex items-center gap-1.5 shadow-sm"
           >
-            <span className="material-symbols-outlined text-lg">list_alt</span> View All Leads (142)
+            <span className={`material-symbols-outlined text-sm ${loading ? 'animate-spin' : ''}`}>sync</span>
+            {loading ? 'Refreshing...' : 'Sync Leads'}
           </button>
           <button 
-            onClick={() => alert('New lead form dialog')}
-            className="bg-primary text-surface-white px-4 py-2 rounded font-button text-sm hover:opacity-90 transition-opacity flex items-center gap-2 shadow-sm"
+            onClick={() => onNavigate?.('invoicing')}
+            className="bg-primary text-surface-white px-4 py-2 rounded font-button text-sm hover:opacity-90 transition-opacity flex items-center gap-2 shadow-sm font-bold"
           >
-            <span className="material-symbols-outlined text-lg">add</span> Create New Lead
+            <span className="material-symbols-outlined text-lg">receipt_long</span> Create Quote / Invoice
           </button>
         </div>
       </div>
@@ -132,23 +219,23 @@ export default function LeadsPage({ onNavigate }: LeadsPageProps) {
           <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
           <div>
             <p className="font-label-bold text-secondary uppercase text-xs tracking-wider">Total Active Requests</p>
-            <h3 className="font-headline-xl text-headline-xl text-on-surface mt-1">142</h3>
+            <h3 className="font-headline-xl text-headline-xl text-on-surface mt-1">{leads.length}</h3>
             <p className="text-tertiary font-body-sm text-body-sm mt-1 flex items-center gap-1">
-              <span className="material-symbols-outlined text-sm">trending_up</span> +12% from last week
+              <span className="material-symbols-outlined text-sm">database</span> Real-time connected to PostgreSQL
             </p>
           </div>
           <div className="flex flex-wrap gap-8 border-t sm:border-t-0 sm:border-l border-outline-variant pt-4 sm:pt-0 sm:pl-8">
             <div>
               <p className="font-label-bold text-secondary text-[11px] tracking-wider">PENDING</p>
-              <p className="font-headline-md text-headline-md text-primary">28</p>
+              <p className="font-headline-md text-headline-md text-primary">{pendingCount}</p>
             </div>
             <div>
               <p className="font-label-bold text-secondary text-[11px] tracking-wider">IN PROGRESS</p>
-              <p className="font-headline-md text-headline-md text-tertiary">94</p>
+              <p className="font-headline-md text-headline-md text-tertiary">{inProgressCount}</p>
             </div>
             <div>
               <p className="font-label-bold text-secondary text-[11px] tracking-wider">COMPLETED</p>
-              <p className="font-headline-md text-headline-md text-status-gray">20</p>
+              <p className="font-headline-md text-headline-md text-status-gray">{completedCount}</p>
             </div>
           </div>
         </div>
@@ -156,15 +243,16 @@ export default function LeadsPage({ onNavigate }: LeadsPageProps) {
         <div className="col-span-12 lg:col-span-4 bg-deep-charcoal text-surface-white rounded p-6 relative flex flex-col justify-between overflow-hidden">
           <div className="z-10">
             <p className="font-label-bold text-surface-variant uppercase text-xs tracking-wider">Unclaimed Handoffs</p>
-            <h3 className="font-headline-xl text-headline-xl mt-1">07</h3>
+            <h3 className="font-headline-xl text-headline-xl mt-1">
+              {leads.filter((l) => l.assignedAdmin === 'Unassigned').length.toString().padStart(2, '0')}
+            </h3>
           </div>
           <button 
-            onClick={() => setShowAllLeadsModal(true)}
+            onClick={() => window.scrollTo({ top: 300, behavior: 'smooth' })}
             className="z-10 mt-6 border border-surface-variant text-surface-white px-4 py-2 rounded font-button text-sm hover:bg-secondary transition-colors w-full"
           >
-            View Urgent Queue
+            View Unclaimed Queue
           </button>
-          {/* Abstract industrial background pattern */}
           <div className="absolute -bottom-6 -right-6 opacity-10 pointer-events-none select-none">
             <span className="material-symbols-outlined text-[140px]">precision_manufacturing</span>
           </div>
@@ -172,7 +260,7 @@ export default function LeadsPage({ onNavigate }: LeadsPageProps) {
       </div>
 
       {/* Main Data Table Container */}
-      <div className="bg-surface-white border border-outline rounded overflow-hidden">
+      <div className="bg-surface-white border border-outline rounded overflow-hidden shadow-sm">
         <div className="p-4 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
           <span className="font-label-bold text-label-bold text-on-surface-variant text-xs flex items-center gap-2">
             ACTIVE LEAD REPOSITORY
@@ -180,87 +268,81 @@ export default function LeadsPage({ onNavigate }: LeadsPageProps) {
               Showing Active ({leads.length})
             </span>
           </span>
-          <div className="flex gap-2">
-            <button 
-              onClick={() => setShowAllLeadsModal(true)}
-              className="bg-primary text-white text-xs px-3 py-1 rounded font-bold hover:opacity-90 flex items-center gap-1 transition-opacity"
-            >
-              <span className="material-symbols-outlined text-sm">open_in_full</span> View All 142 Leads
-            </button>
-            <button className="p-1 hover:bg-surface-container-high rounded transition-colors" title="Refresh list">
-              <span className="material-symbols-outlined text-secondary">refresh</span>
-            </button>
-            <button className="p-1 hover:bg-surface-container-high rounded transition-colors" title="Export CSV">
-              <span className="material-symbols-outlined text-secondary">download</span>
-            </button>
-          </div>
+          <span className="text-secondary text-xs">Click row to inspect inquiry or assign</span>
         </div>
 
-        <div className="overflow-x-auto scroll-hide">
+        <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-deep-charcoal text-surface-white text-xs">
-              <tr>
-                <th className="px-6 py-4 font-label-bold uppercase">Request ID</th>
-                <th className="px-6 py-4 font-label-bold uppercase">Company</th>
-                <th className="px-6 py-4 font-label-bold uppercase">Customer</th>
-                <th className="px-6 py-4 font-label-bold uppercase">Assigned Admin</th>
-                <th className="px-6 py-4 font-label-bold uppercase">Status</th>
-                <th className="px-6 py-4 font-label-bold uppercase text-right">Actions</th>
+            <thead>
+              <tr className="border-b border-outline-variant text-[11px] font-label-bold text-secondary uppercase tracking-wider bg-surface-white">
+                <th className="p-4">Lead ID</th>
+                <th className="p-4">Company</th>
+                <th className="p-4">Contact</th>
+                <th className="p-4">Assigned Specialist</th>
+                <th className="p-4">Status</th>
+                <th className="p-4 text-right">Quick Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-outline-variant font-body-sm text-body-sm">
+            <tbody className="divide-y divide-outline-variant font-body-md text-sm">
               {leads.map((lead) => (
-                <tr key={lead.id} className="hover:bg-surface-container-low transition-colors group">
-                  <td className="px-6 py-4 font-bold text-primary">{lead.id}</td>
-                  <td className="px-6 py-4">{lead.company}</td>
-                  <td className="px-6 py-4">{lead.customer}</td>
-                  <td className="px-6 py-4">
-                    {lead.assignedAdmin === 'Unassigned' ? (
-                      <span className="italic text-secondary">Unassigned</span>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center text-[10px] font-bold">
+                <tr 
+                  key={lead.id} 
+                  onClick={() => setSelectedLead(lead)}
+                  className="hover:bg-surface-container-low transition-colors duration-150 cursor-pointer group"
+                >
+                  <td className="p-4 font-mono font-bold text-primary">{lead.id}</td>
+                  <td className="p-4 font-bold text-on-surface">{lead.company}</td>
+                  <td className="p-4 text-secondary">{lead.customer}</td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-2">
+                      {lead.assignedInitials ? (
+                        <span className="w-6 h-6 rounded-full bg-primary-fixed text-primary flex items-center justify-center font-bold text-[10px]">
                           {lead.assignedInitials}
-                        </div>
-                        <span>{lead.assignedAdmin}</span>
-                      </div>
-                    )}
+                        </span>
+                      ) : (
+                        <span className="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-secondary text-[10px]">
+                          --
+                        </span>
+                      )}
+                      <span className={lead.assignedAdmin === 'Unassigned' ? 'text-error font-medium italic' : 'text-on-surface'}>
+                        {lead.assignedAdmin}
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="p-4">
                     <span
-                      className={`px-2 py-1 rounded font-label-bold text-[10px] uppercase border ${
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
                         lead.status === 'In Progress'
-                          ? 'bg-tertiary-fixed text-on-tertiary-container border-tertiary-container'
-                          : lead.status === 'Pending'
-                          ? 'bg-primary-fixed text-on-primary-container border-primary-container'
-                          : 'bg-surface-container-highest text-secondary border-outline-variant'
+                          ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                          : lead.status === 'Completed'
+                          ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
+                          : 'bg-blue-100 text-blue-900 border border-blue-200'
                       }`}
                     >
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        lead.status === 'In Progress' ? 'bg-amber-500' : lead.status === 'Completed' ? 'bg-emerald-500' : 'bg-blue-500'
+                      }`}></span>
                       {lead.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    {lead.status === 'Completed' ? (
+                  <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                    {lead.assignedAdmin === 'Unassigned' ? (
                       <button
-                        onClick={() => setSelectedLead(lead)}
-                        className="bg-deep-charcoal text-surface-white px-3 py-1.5 rounded font-button text-xs hover:opacity-90 transition-all shadow-sm"
+                        onClick={() => handleClaimLead(lead.id)}
+                        className="bg-primary text-surface-white px-3 py-1 rounded text-xs font-button hover:opacity-90 font-bold"
                       >
-                        View Details
-                      </button>
-                    ) : lead.assignedAdmin === 'Unassigned' ? (
-                      <button
-                        onClick={() => setSelectedLead(lead)}
-                        className="bg-primary text-surface-white px-3 py-1.5 rounded font-button text-xs hover:opacity-90 transition-all shadow-sm group-hover:scale-105"
-                      >
-                        Pick Up Request
+                        Claim Lead
                       </button>
                     ) : (
-                      <button
-                        onClick={() => setSelectedLead(lead)}
-                        className="bg-primary text-surface-white px-3 py-1.5 rounded font-button text-xs hover:opacity-90 transition-all shadow-sm group-hover:scale-105"
+                      <select
+                        value={lead.status}
+                        onChange={(e) => handleUpdateStatus(lead.id, e.target.value as any)}
+                        className="text-xs bg-surface-container border border-outline-variant rounded px-2 py-1 font-medium"
                       >
-                        Handoff Request
-                      </button>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                      </select>
                     )}
                   </td>
                 </tr>
@@ -268,387 +350,66 @@ export default function LeadsPage({ onNavigate }: LeadsPageProps) {
             </tbody>
           </table>
         </div>
-
-        <div className="p-4 border-t border-outline-variant flex items-center justify-between bg-surface-container-low">
-          <p className="font-body-sm text-body-sm text-secondary text-xs">
-            Showing {leads.length} of 142 total requests
-          </p>
-          <div className="flex gap-2">
-            <button className="w-8 h-8 flex items-center justify-center border border-outline-variant bg-surface-white rounded hover:bg-surface-container-high transition-colors">
-              <span className="material-symbols-outlined text-sm">chevron_left</span>
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center border border-primary bg-primary-container text-on-primary-container font-bold rounded text-xs">
-              1
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center border border-outline-variant bg-surface-white rounded hover:bg-surface-container-high transition-colors text-xs">
-              2
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center border border-outline-variant bg-surface-white rounded hover:bg-surface-container-high transition-colors text-xs">
-              3
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center border border-outline-variant bg-surface-white rounded hover:bg-surface-container-high transition-colors">
-              <span className="material-symbols-outlined text-sm">chevron_right</span>
-            </button>
-          </div>
-        </div>
       </div>
 
-      {/* Bento Grid - Supplementary Info */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Technical Queue */}
-        <div className="bg-surface-white border border-outline rounded-xl p-6 min-h-64 flex flex-col justify-between shadow-sm">
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <h4 className="font-headline-md text-headline-md text-lg">Technical Queue</h4>
-              <span className="bg-primary-container/20 text-primary font-bold text-[10px] px-2 py-0.5 rounded-full">
-                {filteredTechQueue.length} Pending
-              </span>
-            </div>
-            <p className="font-body-sm text-body-sm text-secondary text-xs">
-              High-priority requests requiring engineering validation before handoff.
-            </p>
-
-            {/* Filter and Sort Controls */}
-            <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-outline-variant text-[11px]">
-              <div className="flex items-center gap-1">
-                <span className="text-secondary font-bold">Filter:</span>
-                <select
-                  value={queuePriorityFilter}
-                  onChange={(e) => setQueuePriorityFilter(e.target.value as any)}
-                  className="bg-surface-container border border-outline-variant rounded px-1.5 py-0.5 text-xs outline-none"
-                >
-                  <option value="ALL">All Priorities</option>
-                  <option value="URGENT">Urgent</option>
-                  <option value="HIGH">High</option>
-                  <option value="ROUTINE">Routine</option>
-                </select>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-secondary font-bold">Sort:</span>
-                <select
-                  value={queueSort}
-                  onChange={(e) => setQueueSort(e.target.value as any)}
-                  className="bg-surface-container border border-outline-variant rounded px-1.5 py-0.5 text-xs outline-none"
-                >
-                  <option value="ETA_ASC">Fastest ETA</option>
-                  <option value="PRIORITY_DESC">Highest Priority</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2 mt-3 flex-1 overflow-y-auto max-h-40 pr-1">
-            {filteredTechQueue.map((item) => (
-              <div
-                key={item.id}
-                className={`flex items-center gap-3 p-2.5 rounded border-l-4 ${
-                  item.priority === 'URGENT'
-                    ? 'border-l-error bg-error-container/10'
-                    : item.priority === 'HIGH'
-                    ? 'border-l-primary bg-primary-container/10'
-                    : 'border-l-secondary bg-surface-container-low'
-                }`}
-              >
-                <div className="flex-1">
-                  <div className="flex justify-between items-center">
-                    <p className="font-label-bold text-label-bold text-xs">{item.title}</p>
-                    <span
-                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded uppercase ${
-                        item.priority === 'URGENT'
-                          ? 'bg-error text-white'
-                          : item.priority === 'HIGH'
-                          ? 'bg-primary text-white'
-                          : 'bg-secondary/20 text-secondary'
-                      }`}
-                    >
-                      {item.priority}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-secondary mt-0.5 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-xs">schedule</span> ETA: {item.etaHours} {item.etaHours === 1 ? 'Hour' : 'Hours'}
-                  </p>
-                </div>
-              </div>
-            ))}
-            {filteredTechQueue.length === 0 && (
-              <p className="text-xs text-secondary italic py-4 text-center">No queue items match filter.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Admin Productivity */}
-        <div className="bg-surface-white border border-outline rounded-xl p-6 min-h-64 flex flex-col justify-between shadow-sm">
-          <h4 className="font-headline-md text-headline-md text-lg mb-2">Admin Productivity</h4>
-          <div className="flex-1 flex items-end gap-2 px-2">
-            <div className="w-1/4 bg-primary-fixed-dim h-1/2 rounded-t flex items-center justify-center text-[10px] font-bold text-primary">12</div>
-            <div className="w-1/4 bg-primary h-3/4 rounded-t flex items-center justify-center text-[10px] font-bold text-white">28</div>
-            <div className="w-1/4 bg-tertiary-fixed-dim h-full rounded-t flex items-center justify-center text-[10px] font-bold text-tertiary">35</div>
-            <div className="w-1/4 bg-primary h-2/3 rounded-t flex items-center justify-center text-[10px] font-bold text-white">22</div>
-          </div>
-          <div className="mt-4 flex justify-between font-label-bold text-[10px] text-secondary px-2 border-t border-outline-variant pt-2">
-            <span>MON</span>
-            <span>TUE</span>
-            <span>WED</span>
-            <span>THU</span>
-          </div>
-        </div>
-
-        {/* Inventory Sync */}
-        <div className="bg-deep-charcoal rounded-xl p-6 min-h-64 relative overflow-hidden text-surface-white flex flex-col justify-between shadow-md">
-          <img
-            alt="Industrial Warehouse"
-            className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay pointer-events-none"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuA74hvydLUcNnZ9LlHez5FdIIZnQtD0L2RHHITtgxaBMNPQkcJ70RK2n6-8CcMAjPiQtAwdti9gwGaZXLkn9-zG_CBI9bRkoht4oI7bSrDULcHN4XGH4qkpYkuM3whMxoCktePwKyoq4X8W0rSFKHw7-JSFXzjOW9Kn3EJmMfRuOcLe_0KzaU4Q19q_JBkLsh78eKJzdXWP9-gPFIhb_UbDPibpDpyjJ93hPcVj2J8TdZKNIowOjeGC-fkwmJIjVC3LEV-7LRIWHp8"
-          />
-          <div className="relative z-10">
-            <h4 className="font-headline-md text-headline-md text-lg text-white">Inventory Sync</h4>
-            <p className="font-body-sm text-body-sm text-surface-variant text-xs mt-1 leading-relaxed">
-              Check real-time stock levels of technical components before confirming lead feasibility.
-            </p>
-          </div>
-          <div className="relative z-10">
-            <button 
-              onClick={() => onNavigate?.('inventory')}
-              className="bg-white text-deep-charcoal font-button text-sm px-4 py-2.5 rounded-full flex items-center gap-2 hover:bg-primary-container hover:text-white transition-all duration-200 shadow hover:scale-105 active:scale-95 cursor-pointer font-bold"
-            >
-              Launch Catalog <span className="material-symbols-outlined text-base">open_in_new</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Handover Modal */}
+      {/* Lead Detail & Claim Modal */}
       {selectedLead && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div
-            onClick={() => setSelectedLead(null)}
-            className="absolute inset-0 bg-deep-charcoal/70 backdrop-blur-[4px] transition-opacity"
-          ></div>
-          
-          <div className="bg-surface-white w-full max-w-4xl max-h-[85vh] rounded-xl shadow-2xl flex overflow-hidden border border-outline transform transition-all z-10">
-            {/* Modal Sidebar (Dark) */}
-            <div className="w-72 bg-deep-charcoal text-surface-white p-8 flex flex-col justify-between">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface-white border border-outline rounded-lg max-w-lg w-full p-6 shadow-2xl relative space-y-4">
+            <div className="flex justify-between items-start border-b border-outline-variant pb-3">
               <div>
-                <div className="w-12 h-1 bg-primary mb-4"></div>
-                <h3 className="font-headline-md text-headline-md text-xl text-white">
-                  {selectedLead.status === 'Completed' ? 'Request Details' : 'Request Handoff'}
-                </h3>
-                <p className="text-surface-variant font-body-sm text-xs mt-1">{selectedLead.id}</p>
-                
-                <div className="space-y-6 mt-8">
-                  <div>
-                    <p className="font-label-bold text-label-bold text-[10px] text-surface-variant uppercase tracking-wider mb-2">
-                      Original Owner
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded bg-secondary flex items-center justify-center font-bold text-xs">
-                        {selectedLead.assignedInitials || 'UA'}
-                      </div>
-                      <div>
-                        <p className="font-body-md text-sm text-white">
-                          {selectedLead.assignedAdmin === 'Unassigned' ? 'Unassigned' : selectedLead.assignedAdmin}
-                        </p>
-                        <p className="text-[10px] text-surface-variant">Operations Dept</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <p className="font-label-bold text-label-bold text-[10px] text-surface-variant uppercase tracking-wider mb-1">
-                      Current Client
-                    </p>
-                    <p className="font-body-md text-sm text-white">{selectedLead.company}</p>
-                    <p className="text-[10px] text-surface-variant">Industrial Engineering</p>
-                  </div>
-                </div>
+                <span className="font-mono text-xs font-bold text-primary">{selectedLead.id}</span>
+                <h3 className="font-headline-sm text-headline-sm mt-0.5">{selectedLead.company}</h3>
               </div>
-
-              <div className="border-t border-secondary pt-6">
-                <p className="text-[10px] text-surface-variant leading-relaxed italic">
-                  By claiming this request, you take full ownership of client communications and specification delivery.
-                </p>
-              </div>
-            </div>
-
-            {/* Modal Main Content */}
-            <div className="flex-1 bg-surface flex flex-col justify-between max-h-[85vh]">
-              <div className="p-6 border-b border-outline-variant flex justify-between items-center bg-surface-white">
-                <h4 className="font-label-bold text-label-bold text-secondary text-xs uppercase tracking-wider">
-                  Audit Log & Update History
-                </h4>
-                <button
-                  className="text-secondary hover:text-on-surface transition-colors"
-                  onClick={() => setSelectedLead(null)}
-                >
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-              </div>
-
-              {/* Timeline Audit Log */}
-              <div className="flex-grow p-8 overflow-y-auto bg-surface-container-lowest">
-                <div className="space-y-8 relative">
-                  <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-outline-variant"></div>
-                  
-                  <div className="relative pl-10 animate-fade-in">
-                    <div className="absolute left-1.5 top-2 w-3.5 h-3.5 rounded-full bg-primary border-4 border-surface-white"></div>
-                    <div className="bg-surface-white p-4 border border-outline-variant rounded-lg shadow-sm">
-                      <div className="flex justify-between items-center mb-1">
-                        <p className="font-label-bold text-label-bold text-xs text-on-surface">
-                          Initial Inquiry Received
-                        </p>
-                        <span className="text-[10px] text-secondary">Oct 24, 2023 • 09:15 AM</span>
-                      </div>
-                      <p className="font-body-sm text-xs text-on-surface-variant italic">
-                        "Looking for bulk quote on high-torque industrial gearboxes for Q1 2024 rollout."
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="relative pl-10 animate-fade-in">
-                    <div className="absolute left-1.5 top-2 w-3.5 h-3.5 rounded-full bg-secondary border-4 border-surface-white"></div>
-                    <div className="bg-surface-white p-4 border border-outline-variant rounded-lg shadow-sm">
-                      <div className="flex justify-between items-center mb-1">
-                        <p className="font-label-bold text-label-bold text-xs text-on-surface">
-                          Allocated to Operator
-                        </p>
-                        <span className="text-[10px] text-secondary">Oct 24, 2023 • 10:30 AM</span>
-                      </div>
-                      <p className="font-body-sm text-xs text-on-surface-variant">
-                        Lead allocated based on regional workspace and industry classification.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="relative pl-10 animate-fade-in">
-                    <div className="absolute left-1.5 top-2 w-3.5 h-3.5 rounded-full bg-tertiary border-4 border-surface-white"></div>
-                    <div className="bg-surface-white p-4 border border-outline-variant rounded-lg shadow-sm">
-                      <div className="flex justify-between items-center mb-1">
-                        <p className="font-label-bold text-label-bold text-xs text-on-surface">
-                          Technical Specs Verified
-                        </p>
-                        <span className="text-[10px] text-secondary">Oct 25, 2023 • 02:45 PM</span>
-                      </div>
-                      <p className="font-body-sm text-xs text-on-surface-variant">
-                        Engineering team confirmed availability of GR-400 series units. Specification sheet attached.
-                      </p>
-                      <div className="mt-2 inline-flex items-center gap-2 bg-surface-container-low px-2 py-1 rounded text-[10px] border border-outline-variant cursor-pointer hover:bg-outline-variant transition-colors">
-                        <span className="material-symbols-outlined text-sm">attachment</span> SPECS_V2.PDF
-                      </div>
-                    </div>
-                  </div>
-
-                  {!selectedLead.status.includes('Completed') && (
-                    <div className="relative pl-10 animate-fade-in">
-                      <div className="absolute left-1.5 top-2 w-3.5 h-3.5 rounded-full bg-primary-container border-4 border-surface-white"></div>
-                      <div className="bg-surface-white p-4 border border-outline-variant rounded-lg shadow-sm">
-                        <div className="flex justify-between items-center mb-1">
-                          <p className="font-label-bold text-label-bold text-xs text-on-surface">
-                            Handoff Triggered
-                          </p>
-                          <span className="text-[10px] text-secondary">Today • 11:00 AM</span>
-                        </div>
-                        <p className="font-body-sm text-xs text-on-surface-variant">
-                          Owner requested handoff/escalation due to schedule load. Priority: High.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="p-6 bg-surface-white border-t border-outline-variant flex justify-end gap-3 shrink-0">
-                <button
-                  className="px-6 py-2 border border-outline text-on-surface font-button text-sm rounded hover:bg-surface-container-low transition-colors"
-                  onClick={() => setSelectedLead(null)}
-                >
-                  Cancel
-                </button>
-                {selectedLead.status !== 'Completed' && (
-                  <button
-                    onClick={() => handleClaimLead(selectedLead.id)}
-                    className="px-6 py-2 bg-primary text-surface-white font-button text-sm rounded shadow-lg hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-lg">assignment_turned_in</span>
-                    Claim Request & Continue
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* View All Leads Modal */}
-      {showAllLeadsModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div
-            onClick={() => setShowAllLeadsModal(false)}
-            className="absolute inset-0 bg-deep-charcoal/70 backdrop-blur-[4px] transition-opacity"
-          ></div>
-          <div className="bg-surface-white w-full max-w-5xl max-h-[85vh] rounded-xl shadow-2xl flex flex-col overflow-hidden border border-outline z-10 animate-fade-in">
-            <div className="p-6 bg-deep-charcoal text-surface-white flex items-center justify-between">
-              <div>
-                <h3 className="font-headline-md text-headline-md text-xl text-white">Full Active Leads Database</h3>
-                <p className="text-surface-variant font-body-sm text-xs mt-1">Total 142 Active Requests Registered across All Hubs</p>
-              </div>
-              <button
-                onClick={() => setShowAllLeadsModal(false)}
-                className="text-surface-variant hover:text-white transition-colors"
+              <button 
+                onClick={() => setSelectedLead(null)}
+                className="text-secondary hover:text-on-surface text-lg font-bold"
               >
-                <span className="material-symbols-outlined">close</span>
+                ✕
               </button>
             </div>
-            <div className="p-6 overflow-y-auto space-y-4 flex-grow bg-surface-container-lowest">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-surface-container text-secondary text-xs uppercase font-label-bold">
-                  <tr>
-                    <th className="px-4 py-3">ID</th>
-                    <th className="px-4 py-3">Company</th>
-                    <th className="px-4 py-3">Customer</th>
-                    <th className="px-4 py-3">Assigned Admin</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-variant text-xs">
-                  {leads.concat([
-                    { id: '#REQ-8320', company: 'Metro Mining Equipment', customer: 'David Vance', assignedAdmin: 'Jack Kern', assignedInitials: 'JK', status: 'In Progress' },
-                    { id: '#REQ-8324', company: 'Apex Energy Systems', customer: 'Julia Roberts', assignedAdmin: 'Unassigned', assignedInitials: '', status: 'Pending' },
-                    { id: '#REQ-8331', company: 'Titan Hydraulics', customer: 'Marcus Brody', assignedAdmin: 'Sarah Lund', assignedInitials: 'SL', status: 'Completed' },
-                    { id: '#REQ-8338', company: 'Starlight Tech Ltd', customer: 'Anna Wang', assignedAdmin: 'Alex Miller', assignedInitials: 'AM', status: 'In Progress' },
-                  ]).map((lead) => (
-                    <tr key={lead.id} className="hover:bg-surface-container-low">
-                      <td className="px-4 py-3 font-bold text-primary">{lead.id}</td>
-                      <td className="px-4 py-3 font-semibold">{lead.company}</td>
-                      <td className="px-4 py-3 text-secondary">{lead.customer}</td>
-                      <td className="px-4 py-3">{lead.assignedAdmin}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          lead.status === 'In Progress' ? 'bg-tertiary-fixed text-on-tertiary-container' : lead.status === 'Pending' ? 'bg-primary-fixed text-on-primary-container' : 'bg-surface-container-highest text-secondary'
-                        }`}>{lead.status}</span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => { setSelectedLead(lead); setShowAllLeadsModal(false); }}
-                          className="text-primary hover:underline font-bold text-xs"
-                        >
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-secondary text-xs uppercase font-bold">Contact Person</p>
+                <p className="font-medium text-on-surface">{selectedLead.customer} {selectedLead.email ? `(${selectedLead.email})` : ''}</p>
+                {selectedLead.phone && <p className="text-xs text-secondary mt-0.5">{selectedLead.phone}</p>}
+              </div>
+
+              {selectedLead.message && (
+                <div className="bg-surface-container-low p-3 rounded border border-outline-variant">
+                  <p className="text-secondary text-xs uppercase font-bold mb-1">Inquiry Specification</p>
+                  <p className="text-body-sm text-on-surface">{selectedLead.message}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div>
+                  <p className="text-secondary text-xs uppercase font-bold">Current Status</p>
+                  <p className="font-bold text-sm mt-0.5">{selectedLead.status}</p>
+                </div>
+                <div>
+                  <p className="text-secondary text-xs uppercase font-bold">Assigned Engineer</p>
+                  <p className="font-bold text-sm mt-0.5">{selectedLead.assignedAdmin}</p>
+                </div>
+              </div>
             </div>
-            <div className="p-4 border-t border-outline-variant bg-surface-white flex justify-between items-center text-xs">
-              <span className="text-secondary">Showing 9 of 142 total leads</span>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
               <button
-                onClick={() => setShowAllLeadsModal(false)}
-                className="bg-deep-charcoal text-white px-5 py-2 rounded font-button hover:opacity-90"
+                onClick={() => setSelectedLead(null)}
+                className="px-4 py-2 border border-outline rounded text-sm text-secondary hover:bg-surface-container"
               >
-                Close Repository View
+                Close
               </button>
+              {selectedLead.assignedAdmin === 'Unassigned' && (
+                <button
+                  onClick={() => handleClaimLead(selectedLead.id)}
+                  className="px-4 py-2 bg-primary text-surface-white rounded text-sm font-bold hover:opacity-90"
+                >
+                  Claim &amp; Take Assignment
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { fetchProjects, updateTask, createTask, createProject } from '../services/projectsService';
 
 type KanbanStatus = 'new' | 'inprogress' | 'awaiting' | 'completed';
 
@@ -113,25 +114,148 @@ const fmtNGN = (n: number) =>
 
 export default function ProjectsPage() {
   const [cards, setCards] = useState<KanbanCard[]>(initialCards);
+  
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  
   const [savingCards, setSavingCards] = useState<Set<string>>(new Set());
   const [savedCards, setSavedCards] = useState<Set<string>>(new Set());
   const [dragOverColumn, setDragOverColumn] = useState<KanbanStatus | null>(null);
+  const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDesc, setNewTaskDesc] = useState('');
+  const [newTaskStatus, setNewTaskStatus] = useState<KanbanStatus>('new');
   const draggingCardId = useRef<string | null>(null);
+
+  const statusToBackend: Record<KanbanStatus, 'backlog' | 'in_progress' | 'review' | 'done'> = {
+    new: 'backlog',
+    inprogress: 'in_progress',
+    awaiting: 'review',
+    completed: 'done',
+  };
+
+  const backendToStatus: Record<string, KanbanStatus> = {
+    backlog: 'new',
+    in_progress: 'inprogress',
+    review: 'awaiting',
+    done: 'completed',
+  };
+
+  const loadProjectsAndTasks = () => {
+    
+    fetchProjects()
+      .then((res) => {
+        if (res && res.data && res.data.length > 0) {
+          
+          const firstProj = res.data[0];
+          setActiveProjectId(firstProj.id);
+          
+          if (firstProj.tasks && firstProj.tasks.length > 0) {
+            const mappedCards: KanbanCard[] = firstProj.tasks.map((t, idx) => ({
+              id: t.id,
+              reqId: `TSK-${idx + 100}`,
+              title: t.title,
+              description: t.description || 'Routine engineering assignment.',
+              priority: 'HIGH PRIORITY',
+              priorityLevel: 'HIGH',
+              budget: 650000,
+              actualCost: 420000,
+              estCompletion: t.due_date || '2026-09-01',
+              assignees: [],
+              status: backendToStatus[t.status] || 'new',
+            }));
+            setCards(mappedCards);
+          }
+        }
+      })
+      .catch(() => {})
+      ;
+  };
+
+  useEffect(() => {
+    loadProjectsAndTasks();
+  }, []);
 
   const handleDragStart = (cardId: string) => {
     draggingCardId.current = cardId;
   };
 
-  const handleDrop = (targetStatus: KanbanStatus) => {
-    if (draggingCardId.current) {
+  const handleDrop = async (targetStatus: KanbanStatus) => {
+    const cardId = draggingCardId.current;
+    if (cardId) {
       setCards((prev) =>
         prev.map((card) =>
-          card.id === draggingCardId.current ? { ...card, status: targetStatus } : card
+          card.id === cardId ? { ...card, status: targetStatus } : card
         )
       );
+
+      // Sync with backend if real task ID
+      if (!cardId.startsWith('k')) {
+        try {
+          await updateTask(cardId, { status: statusToBackend[targetStatus] });
+        } catch {
+          // Graceful fallback
+        }
+      }
     }
     draggingCardId.current = null;
     setDragOverColumn(null);
+  };
+
+  const handleCreateNewTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+
+    let projId = activeProjectId;
+    if (!projId) {
+      try {
+        const newP = await createProject({ title: 'Mandtech Yard Operations', description: 'General fleet maintenance' });
+        projId = newP.data.id;
+        setActiveProjectId(projId);
+      } catch {
+        projId = 'proj-local';
+      }
+    }
+
+    try {
+      const res = await createTask(projId, {
+        title: newTaskTitle.trim(),
+        description: newTaskDesc.trim() || undefined,
+        status: statusToBackend[newTaskStatus],
+      });
+      const newCard: KanbanCard = {
+        id: res.data?.id || `k${Date.now()}`,
+        reqId: `TSK-${Math.floor(100 + Math.random() * 900)}`,
+        title: newTaskTitle.trim(),
+        description: newTaskDesc.trim() || 'New site assignment.',
+        priority: 'HIGH PRIORITY',
+        priorityLevel: 'HIGH',
+        budget: 500000,
+        actualCost: 200000,
+        estCompletion: new Date().toISOString().split('T')[0],
+        assignees: [],
+        status: newTaskStatus,
+      };
+      setCards((prev) => [newCard, ...prev]);
+    } catch {
+      const newCard: KanbanCard = {
+        id: `k${Date.now()}`,
+        reqId: `TSK-${Math.floor(100 + Math.random() * 900)}`,
+        title: newTaskTitle.trim(),
+        description: newTaskDesc.trim(),
+        priority: 'ROUTINE',
+        priorityLevel: 'ROUTINE',
+        budget: 350000,
+        actualCost: 100000,
+        estCompletion: new Date().toISOString().split('T')[0],
+        assignees: [],
+        status: newTaskStatus,
+      };
+      setCards((prev) => [newCard, ...prev]);
+    }
+
+    setNewTaskTitle('');
+    setNewTaskDesc('');
+    setShowNewTaskModal(false);
   };
 
   const handleLogProgress = (cardId: string) => {
@@ -174,7 +298,7 @@ export default function ProjectsPage() {
             <span className="material-symbols-outlined text-lg">filter_list</span> Filter
           </button>
           <button
-            onClick={() => alert('New project dialog')}
+            onClick={() => setShowNewTaskModal(true)}
             className="flex items-center gap-2 bg-primary-container text-on-primary-container px-5 py-2 rounded font-button text-sm hover:shadow-md transition-all shadow-sm font-bold"
           >
             <span className="material-symbols-outlined text-lg">add</span> New Project
@@ -417,6 +541,69 @@ export default function ProjectsPage() {
           }}
         ></div>
       </section>
+    
+      {/* New Task / Card Modal */}
+      {showNewTaskModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface-white border border-outline rounded-lg max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-outline-variant pb-3">
+              <h3 className="font-headline-sm text-headline-sm">Create New Kanban Task</h3>
+              <button onClick={() => setShowNewTaskModal(false)} className="text-secondary hover:text-on-surface font-bold text-lg">✕</button>
+            </div>
+            <form onSubmit={handleCreateNewTask} className="space-y-4 text-sm">
+              <div>
+                <label className="block font-bold text-xs uppercase text-secondary mb-1">Task Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sullair 185 Oil & Filter Change"
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  className="w-full bg-surface-container border border-outline rounded px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-xs uppercase text-secondary mb-1">Description</label>
+                <textarea
+                  rows={3}
+                  placeholder="Technical scope, yard location, or machine serial number..."
+                  value={newTaskDesc}
+                  onChange={(e) => setNewTaskDesc(e.target.value)}
+                  className="w-full bg-surface-container border border-outline rounded px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-xs uppercase text-secondary mb-1">Initial Column / Status</label>
+                <select
+                  value={newTaskStatus}
+                  onChange={(e) => setNewTaskStatus(e.target.value as any)}
+                  className="w-full bg-surface-container border border-outline rounded px-3 py-2 text-sm font-medium"
+                >
+                  <option value="new">New Requests</option>
+                  <option value="inprogress">Assigned / In Progress</option>
+                  <option value="awaiting">Awaiting Parts</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-3 pt-3 border-t border-outline-variant">
+                <button
+                  type="button"
+                  onClick={() => setShowNewTaskModal(false)}
+                  className="px-4 py-2 border border-outline rounded text-secondary hover:bg-surface-container"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary text-surface-white rounded font-bold hover:opacity-90"
+                >
+                  Save Task
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

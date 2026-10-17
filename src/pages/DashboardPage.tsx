@@ -1,7 +1,8 @@
-
-
 import { useState, useEffect } from 'react';
 import { checkBackendHealth } from '../services/authService';
+import { fetchDashboardStats, DashboardStats } from '../services/dashboardService';
+import { fetchInquiries } from '../services/leadsService';
+import { Inquiry } from '../services/types';
 
 interface DashboardPageProps {
   onNavigate?: (tab: 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects') => void;
@@ -9,43 +10,56 @@ interface DashboardPageProps {
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
   const [apiOnline, setApiOnline] = useState<boolean | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentInquiries, setRecentInquiries] = useState<Inquiry[]>([]);
 
   useEffect(() => {
-    checkBackendHealth().then(setApiOnline);
+    checkBackendHealth().then((online) => {
+      setApiOnline(online);
+      if (online) {
+        fetchDashboardStats()
+          .then((res) => setStats(res.data))
+          .catch(() => {});
+        fetchInquiries({ limit: 4 })
+          .then((res) => {
+            if (res && res.data) setRecentInquiries(res.data);
+          })
+          .catch(() => {});
+      }
+    });
   }, []);
-  
-  const incomingRequests = [
+
+  const defaultRequests: Inquiry[] = [
     {
-      id: 1,
-      source: 'WhatsApp',
+      id: '1',
+      name: 'David Chen',
       company: 'Global Logistics Corp',
-      customer: 'David Chen',
+      email: 'd.chen@global-logistics.com',
       message: 'Inquiry about heavy excavator lease terms.',
-      time: '2m ago',
-      active: true,
-      icon: 'chat',
+      equipment_interests: ['Heavy Excavators'],
+      created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
     },
     {
-      id: 2,
-      source: 'Email',
+      id: '2',
+      name: 'Sarah Miller',
       company: 'Apex Construction Ltd.',
-      customer: 'Sarah Miller',
+      email: 's.miller@apex-construction.com',
       message: 'Technical spec request for Generator Set #44.',
-      time: '15m ago',
-      active: false,
-      icon: 'mail',
+      equipment_interests: ['Generator Sets'],
+      created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     },
     {
-      id: 3,
-      source: 'WhatsApp',
+      id: '3',
+      name: 'John Doe',
       company: 'Urban Dev Group',
-      customer: 'John Doe',
-      message: 'Urgent maintenance request for onsite crane.',
-      time: '42m ago',
-      active: false,
-      icon: 'chat',
+      email: 'j.doe@urbandev.com',
+      message: 'Urgent maintenance request for onsite rotary compressor.',
+      equipment_interests: ['Rotary Compressors'],
+      created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
     },
   ];
+
+  const displayRequests: Inquiry[] = recentInquiries.length > 0 ? recentInquiries : defaultRequests;
 
   const tasks = {
     inProgress: [
@@ -85,7 +99,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               {apiOnline === true && (
                 <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  REST API Online
+                  REST API Connected
                 </span>
               )}
               {apiOnline === false && (
@@ -94,61 +108,76 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
                 </span>
               )}
             </div>
-            <h2 className="font-headline-md text-headline-md mt-0.5">Logged in at 08:30 AM</h2>
+            <h2 className="font-headline-md text-headline-md mt-0.5">Logged in as Duty Dispatch Lead</h2>
           </div>
         </div>
         <div className="text-right">
           <p className="text-secondary text-body-sm">
-            Status: <span className="text-on-primary-fixed-variant font-bold">On Time</span>
+            Status: <span className="text-on-primary-fixed-variant font-bold">Live Operational Shift</span>
           </p>
-          <p className="text-secondary text-body-sm">Shift Ends: 05:30 PM</p>
+          <p className="text-secondary text-body-sm">Lagos &amp; Port Harcourt Yards</p>
         </div>
       </section>
 
       {/* 2. Metrics Grid */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Metric 1 */}
-        <div className="bg-surface-white border border-outline-variant rounded-lg p-6 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+        {/* Metric 1 - Inquiries */}
+        <div 
+          onClick={() => onNavigate?.('leads')}
+          className="bg-surface-white border border-outline-variant rounded-lg p-6 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer group"
+        >
           <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-surface-container rounded-lg">
-              <span className="material-symbols-outlined text-secondary">public</span>
+            <div className="p-2 bg-surface-container rounded-lg group-hover:bg-primary-fixed transition-colors">
+              <span className="material-symbols-outlined text-secondary group-hover:text-primary">mark_email_unread</span>
             </div>
-            <span className="text-status-gray text-label-bold text-xs">+12% vs yesterday</span>
+            <span className="text-status-gray text-label-bold text-xs">
+              {stats?.inquiries?.new ? `${stats.inquiries.new} New Leads` : 'Active Queue'}
+            </span>
           </div>
-          <h3 className="text-secondary font-label-bold uppercase text-xs tracking-wider">New Web Inquiries Today</h3>
-          <p className="font-headline-lg text-headline-lg mt-1">12</p>
+          <h3 className="text-secondary font-label-bold uppercase text-xs tracking-wider">Customer RFQ Inquiries</h3>
+          <p className="font-headline-lg text-headline-lg mt-1">
+            {stats ? stats.inquiries.total : 14}
+          </p>
         </div>
 
-        {/* Metric 2 */}
+        {/* Metric 2 - Service Dispatches */}
         <div className="bg-surface-white border border-outline-variant rounded-lg p-6 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
           <div className="flex justify-between items-start mb-4">
             <div className="p-2 bg-surface-container rounded-lg">
               <span className="material-symbols-outlined text-secondary">precision_manufacturing</span>
             </div>
-            <span className="text-on-primary-fixed-variant font-label-bold text-xs">Optimal Load</span>
+            <span className="text-on-primary-fixed-variant font-label-bold text-xs">
+              {stats?.service_tickets?.in_dispatch ? `${stats.service_tickets.in_dispatch} En Route` : 'Active Dispatch'}
+            </span>
           </div>
-          <h3 className="text-secondary font-label-bold uppercase text-xs tracking-wider">Active Leases</h3>
-          <p className="font-headline-lg text-headline-lg mt-1">45</p>
+          <h3 className="text-secondary font-label-bold uppercase text-xs tracking-wider">Service Tickets</h3>
+          <p className="font-headline-lg text-headline-lg mt-1">
+            {stats ? stats.service_tickets.total : 28}
+          </p>
         </div>
 
-        {/* Metric 3 - Low Stock Alerts (Clickable) */}
+        {/* Metric 3 - Equipment & Parts (Clickable) */}
         <div 
           onClick={() => onNavigate?.('inventory')}
           className="bg-surface-white border border-outline-variant rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 border-t-4 border-t-primary-container cursor-pointer group hover:border-primary-container"
-          title="Click to view Low Stock Inventory details"
+          title="Click to view Inventory catalog"
         >
           <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-error-container rounded-lg group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-error">warning</span>
+            <div className="p-2 bg-primary-fixed rounded-lg group-hover:scale-110 transition-transform">
+              <span className="material-symbols-outlined text-primary">inventory_2</span>
             </div>
-            <span className="text-error font-label-bold text-xs flex items-center gap-1 group-hover:underline">
-              Action Required <span className="material-symbols-outlined text-xs">arrow_forward</span>
+            <span className="text-primary font-label-bold text-xs flex items-center gap-1 group-hover:underline">
+              Live Catalog <span className="material-symbols-outlined text-xs">arrow_forward</span>
             </span>
           </div>
-          <h3 className="text-secondary font-label-bold uppercase text-xs tracking-wider">Low Stock Alerts</h3>
+          <h3 className="text-secondary font-label-bold uppercase text-xs tracking-wider">Active Inventory Fleet</h3>
           <div className="flex items-baseline justify-between mt-1">
-            <p className="font-headline-lg text-headline-lg">8</p>
-            <span className="text-xs text-primary font-bold group-hover:underline">View Inventory &rarr;</span>
+            <p className="font-headline-lg text-headline-lg">
+              {stats ? stats.active_products + stats.active_parts : 36}
+            </p>
+            <span className="text-xs text-secondary font-medium">
+              {stats ? `${stats.active_products} Units • ${stats.active_parts} Spares` : 'Compressors & Spares'}
+            </span>
           </div>
         </div>
       </section>
@@ -163,165 +192,82 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
               onClick={() => onNavigate?.('leads')}
               className="text-primary font-button text-button text-sm hover:underline flex items-center gap-1"
             >
-              View All Requests <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              Manage In Leads <span className="material-symbols-outlined text-sm">arrow_forward</span>
             </button>
           </div>
 
-          {incomingRequests.map((req) => (
+          {displayRequests.map((req, idx) => (
             <div
-              key={req.id}
+              key={req.id || idx}
+              onClick={() => onNavigate?.('leads')}
               className="bg-surface-white border border-outline-variant rounded-lg p-4 flex gap-4 items-center hover:bg-surface-container-low transition-colors duration-200 cursor-pointer"
             >
               <div className="w-12 h-12 bg-surface-container-high rounded flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-secondary">{req.icon}</span>
+                <span className="material-symbols-outlined text-primary">
+                  {req.equipment_interests && req.equipment_interests.length > 0 ? 'construction' : 'mail'}
+                </span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start">
                   <h4 className="font-bold text-body-md truncate">{req.company}</h4>
-                  <span className="bg-surface-container px-2 py-0.5 rounded text-[10px] font-bold text-secondary uppercase">
-                    {req.source}
+                  <span className="text-status-gray text-label-bold text-xs shrink-0 ml-2">
+                    {req.created_at ? new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent'}
                   </span>
                 </div>
-                <p className="text-secondary text-body-sm truncate mt-0.5">
-                  Customer: {req.customer} • {req.message}
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-[11px] text-status-gray font-label-bold">{req.time}</p>
-                <span
-                  className={`inline-block w-2 h-2 rounded-full mt-1 ${
-                    req.active ? 'bg-primary-container animate-pulse' : 'bg-transparent'
-                  }`}
-                ></span>
+                <p className="text-secondary text-body-sm font-medium">{req.name} • {req.email}</p>
+                <p className="text-outline text-body-sm line-clamp-1 mt-0.5">{req.message}</p>
               </div>
             </div>
           ))}
-
-          {/* Large Featured Card */}
-          <div className="relative rounded-lg overflow-hidden group h-64 border border-outline-variant shadow-sm mt-6">
-            <img
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              alt="Technician inspecting diesel generator"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfnzLBqVIRb7Z4G-epCwiuv6HsarDnEA8knn2CaxTUSkHMnj-9hIYBUabJnmg2l-gKe2tlhbztxgWYH8qts6ES0oF-oyC26jF_R6DbbyzTHMUzqO16wcPDQ5Xp82BMTFCD3jeVjCLcE6z-CqypRinNlMoi-wT5o8delF9zxzaRKK4K90SU2uzmCCWan9byfQN3f5JDwgiyEyDGvn1SSPgffp9CPqB6RMWcfUmxmj9RcuUVHIKOKTvaQ1ROSzSNFCL_Tt-_8a_6rtE"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-deep-charcoal via-transparent to-transparent opacity-90"></div>
-            <div className="absolute bottom-0 left-0 p-6 w-full z-10">
-              <span className="bg-primary-container text-on-primary-container px-3 py-1 rounded-full text-label-bold text-xs uppercase mb-2 inline-block">
-                Priority Maintenance
-              </span>
-              <h4 className="text-surface-white font-headline-md text-headline-md leading-tight text-xl">
-                Quarterly Calibration Phase 2: Industrial Area C
-              </h4>
-              <p className="text-surface-variant text-body-sm mt-1">Scheduled for tomorrow, 09:00 AM</p>
-            </div>
-          </div>
         </div>
 
-        {/* Right: Quick-Glance Task Board */}
-        <div className="lg:col-span-5 flex flex-col">
-          <div className="bg-surface-white border border-outline-variant rounded-lg p-6 flex-1 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-headline-md text-headline-md">Task Board</h3>
-              <button className="bg-surface-container hover:bg-surface-container-high p-2 rounded-full transition-colors duration-200">
-                <span className="material-symbols-outlined">add</span>
+        {/* Right: Operational Tasks & Fleet Utilization */}
+        <div className="lg:col-span-5 space-y-6">
+          {/* Ongoing Operational Tasks */}
+          <div className="bg-surface-white border border-outline-variant rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="font-headline-sm text-headline-sm">Ongoing Tasks</h4>
+              <button 
+                onClick={() => onNavigate?.('projects')}
+                className="text-primary font-button text-button text-xs hover:underline flex items-center gap-1"
+              >
+                Kanban Board <span className="material-symbols-outlined text-xs">arrow_forward</span>
               </button>
             </div>
-
-            <div className="space-y-6">
-              {/* Task Category 1: In Progress */}
+            <div className="space-y-4">
               <div>
-                <h4 className="text-secondary font-label-bold uppercase text-xs tracking-wider mb-3 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
-                  In Progress ({tasks.inProgress.length})
-                </h4>
-                <div className="space-y-3">
+                <p className="text-secondary font-label-bold uppercase text-[10px] tracking-wider mb-2">In Progress</p>
+                <div className="space-y-2">
                   {tasks.inProgress.map((task) => (
-                    <div
-                      key={task.id}
-                      className="bg-surface-container-lowest border border-outline-variant p-3 rounded-lg flex items-start justify-between group hover:border-outline transition-all duration-200"
-                    >
-                      <div>
-                        <p className="font-bold text-body-md text-sm">{task.title}</p>
-                        <p className="text-secondary text-[11px]">Assigned to: {task.user}</p>
-                      </div>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="material-symbols-outlined text-secondary cursor-pointer">
-                          drag_indicator
-                        </span>
-                      </div>
+                    <div key={task.id} className="p-3 bg-surface-container-low rounded border border-outline-variant flex justify-between items-center">
+                      <span className="font-body-md text-sm truncate mr-2">{task.title}</span>
+                      <span className="text-xs bg-surface-white px-2 py-0.5 rounded border border-outline-variant shrink-0">{task.user}</span>
                     </div>
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Task Category 2: Backlog */}
-              <div>
-                <h4 className="text-secondary font-label-bold uppercase text-xs tracking-wider mb-3 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-status-gray"></span>
-                  Backlog ({tasks.backlog.length})
-                </h4>
-                <div className="space-y-3">
-                  {tasks.backlog.map((task) => (
-                    <div
-                      key={task.id}
-                      className="bg-surface-container-lowest border border-outline-variant p-3 rounded-lg flex items-start justify-between group grayscale hover:grayscale-0 hover:border-outline transition-all duration-200"
-                    >
-                      <div>
-                        <p className="font-bold text-body-md text-sm">{task.title}</p>
-                        <p className="text-secondary text-[11px]">Assigned to: {task.user}</p>
-                      </div>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="material-symbols-outlined text-secondary cursor-pointer">
-                          drag_indicator
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+          {/* Fleet Weekly Utilization */}
+          <div className="bg-surface-white border border-outline-variant rounded-lg p-6">
+            <h4 className="font-headline-sm text-headline-sm mb-4">Fleet Equipment Utilization</h4>
+            <div className="flex items-end justify-between h-32 pt-4 px-2">
+              {utilizationData.map((item) => (
+                <div key={item.day} className="flex flex-col items-center gap-2 flex-1">
+                  <div className="w-full max-w-[28px] bg-surface-container rounded-t relative h-24 flex items-end">
+                    <div 
+                      className={`w-full rounded-t transition-all duration-500 ${item.active ? 'bg-primary' : 'bg-secondary'}`} 
+                      style={{ height: item.percentage }}
+                    ></div>
+                  </div>
+                  <span className="text-[10px] font-bold text-secondary">{item.day}</span>
                 </div>
-              </div>
-
-              {/* Performance Data Visual */}
-              <div className="mt-8 pt-8 border-t border-outline-variant">
-                <h4 className="text-secondary font-label-bold uppercase text-xs tracking-wider mb-4">
-                  Daily Fleet Utilization
-                </h4>
-                <div className="flex items-end gap-2 h-20 px-1">
-                  {utilizationData.map((bar, idx) => (
-                    <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end">
-                      <div
-                        className={`w-full rounded-t-sm transition-all duration-500 ${
-                          bar.active
-                            ? 'bg-primary-container shadow-[0_0_10px_rgba(245,130,32,0.3)]'
-                            : 'bg-secondary/20 hover:bg-secondary/35'
-                        }`}
-                        style={{ height: bar.percentage }}
-                      ></div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex justify-between mt-2 text-[10px] text-secondary font-label-bold px-1">
-                  {utilizationData.map((bar, idx) => (
-                    <span key={idx}>{bar.day}</span>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
-
-      {/* FAB (Contextual Floating Action Button) */}
-      <button 
-        onClick={() => alert('New technical task handler')}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-primary text-surface-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center z-50 group"
-      >
-        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-          add_task
-        </span>
-        <span className="absolute right-16 bg-deep-charcoal text-surface-white px-3 py-1.5 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-md">
-          Add task
-        </span>
-      </button>
     </div>
   );
 }

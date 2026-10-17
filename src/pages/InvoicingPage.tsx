@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createInvoice, fetchInvoices, updateInvoiceStatus, Invoice } from '../services/invoicingService';
 
 interface LineItem {
   id: string;
@@ -9,6 +10,78 @@ interface LineItem {
 
 export default function InvoicingPage() {
   const [companyName, setCompanyName] = useState('Apex Manufacturing Ltd.');
+  const [saving, setSaving] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+  const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
+  const [pastInvoices, setPastInvoices] = useState<Invoice[]>([]);
+
+  const loadPastInvoices = () => {
+    fetchInvoices()
+      .then((res) => {
+        if (res && res.data) setPastInvoices(res.data);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadPastInvoices();
+  }, []);
+
+  const handleSaveInvoice = async (status: 'draft' | 'sent') => {
+    if (!companyName.trim()) {
+      setSaveErrorMsg('Please enter a company name.');
+      return;
+    }
+    if (!clientContact.trim() || !emailAddress.trim()) {
+      setSaveErrorMsg('Please enter client contact and email.');
+      return;
+    }
+    if (lineItems.length === 0) {
+      setSaveErrorMsg('Please add at least one line item.');
+      return;
+    }
+
+    setSaving(true);
+    setSaveErrorMsg(null);
+    setSaveSuccessMsg(null);
+
+    try {
+      const res = await createInvoice({
+        company: companyName.trim(),
+        contact_name: clientContact.trim(),
+        email: emailAddress.trim(),
+        billing_address: billingAddress.trim(),
+        line_items: lineItems.map((li) => ({
+          description: li.description,
+          qty: li.qty,
+          unit_price: li.unitPrice,
+        })),
+        discount_pct: discount,
+        vat_rate_pct: vatRate,
+        delivery_terms: incoterms,
+        currency: 'NGN',
+        notes: `Payment terms: ${paymentTerms}. Due Date: ${dueDate}. PO: ${poNumber}`,
+        status,
+      });
+
+      setSaveSuccessMsg(`Invoice ${res.data.invoice_number} saved successfully as ${status.toUpperCase()}!`);
+      loadPastInvoices();
+      setTimeout(() => setSaveSuccessMsg(null), 5000);
+    } catch (err: any) {
+      setSaveErrorMsg(err.message || 'Failed to save invoice.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangeStatus = async (invoiceId: string, newStatus: string) => {
+    try {
+      await updateInvoiceStatus(invoiceId, newStatus);
+      loadPastInvoices();
+    } catch (err: any) {
+      alert(err.message || 'Failed to update status.');
+    }
+  };
   const [clientContact, setClientContact] = useState('Sarah Jenkins');
   const [emailAddress, setEmailAddress] = useState('s.jenkins@apex-mfg.com');
   const [billingAddress, setBillingAddress] = useState('44 Industrial Parkway, North Wing, Manchester, M17 1BR');
@@ -91,20 +164,45 @@ export default function InvoicingPage() {
           </p>
         </div>
         <div className="flex gap-3 shrink-0">
-          <button className="px-5 py-2.5 bg-surface-white border border-outline text-deep-charcoal font-button text-sm rounded-lg hover:bg-surface-container-low transition-all flex items-center gap-2 shadow-sm">
-            <span className="material-symbols-outlined text-lg">save</span> Save Draft
+          <button 
+            onClick={() => handleSaveInvoice('draft')}
+            disabled={saving}
+            className="px-5 py-2.5 bg-surface-white border border-outline text-deep-charcoal font-button text-sm rounded-lg hover:bg-surface-container-low transition-all flex items-center gap-2 shadow-sm font-semibold disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-lg">save</span> 
+            {saving ? 'Saving...' : 'Save Draft'}
           </button>
           <button
-            onClick={() => alert('Invoice generated and sent!')}
-            className="px-5 py-2.5 bg-primary-container text-on-primary-container font-button text-sm rounded-lg hover:shadow-lg transition-all flex items-center gap-2 shadow-sm"
+            onClick={() => handleSaveInvoice('sent')}
+            disabled={saving}
+            className="px-5 py-2.5 bg-primary-container text-on-primary-container font-button text-sm rounded-lg hover:shadow-lg transition-all flex items-center gap-2 shadow-sm font-bold disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-lg">send</span> Generate & Send
+            <span className="material-symbols-outlined text-lg">send</span> 
+            {saving ? 'Processing...' : 'Generate & Issue'}
           </button>
         </div>
       </div>
 
       {/* Split Layout */}
-      <div className="grid grid-cols-12 gap-8 h-[calc(100vh-220px)]">
+      {saveSuccessMsg && (
+        <div className="mb-4 p-4 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-lg flex items-center justify-between text-sm font-medium">
+          <span className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-emerald-600">check_circle</span>
+            {saveSuccessMsg}
+          </span>
+          <button onClick={() => setSaveSuccessMsg(null)} className="text-emerald-700 hover:text-emerald-900">✕</button>
+        </div>
+      )}
+      {saveErrorMsg && (
+        <div className="mb-4 p-4 bg-rose-100 border border-rose-300 text-rose-900 rounded-lg flex items-center justify-between text-sm font-medium">
+          <span className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-rose-600">error</span>
+            {saveErrorMsg}
+          </span>
+          <button onClick={() => setSaveErrorMsg(null)} className="text-rose-700 hover:text-rose-900">✕</button>
+        </div>
+      )}
+      <div className="grid grid-cols-12 gap-8 mb-12">
 
         {/* LEFT: Form Builder */}
         <section className="col-span-12 lg:col-span-5 overflow-y-auto pr-2 space-y-6 pb-10 scroll-hide">
@@ -521,6 +619,64 @@ export default function InvoicingPage() {
           </div>
         </section>
       </div>
+
+      {/* Recent Invoices Ledger */}
+      {pastInvoices.length > 0 && (
+        <section className="mt-12 bg-surface-white border border-outline rounded-lg p-6 shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-headline-sm text-headline-sm text-deep-charcoal">Recent Invoices &amp; Quotations</h3>
+            <span className="text-xs text-secondary">{pastInvoices.length} Registered in Database</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-outline-variant text-[11px] font-label-bold text-secondary uppercase tracking-wider">
+                  <th className="pb-3">Invoice #</th>
+                  <th className="pb-3">Company</th>
+                  <th className="pb-3">Contact</th>
+                  <th className="pb-3">Subtotal</th>
+                  <th className="pb-3">Total Amount</th>
+                  <th className="pb-3">Status</th>
+                  <th className="pb-3 text-right">Update Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant">
+                {pastInvoices.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-surface-container-low transition-colors">
+                    <td className="py-3 font-mono font-bold text-primary">{inv.invoice_number}</td>
+                    <td className="py-3 font-semibold">{inv.company}</td>
+                    <td className="py-3 text-secondary">{inv.contact_name}</td>
+                    <td className="py-3 text-secondary">{fmt(inv.subtotal)}</td>
+                    <td className="py-3 font-bold text-on-surface">{fmt(inv.total)}</td>
+                    <td className="py-3">
+                      <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
+                        inv.status === 'paid' ? 'bg-emerald-100 text-emerald-800' :
+                        inv.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                        inv.status === 'cancelled' ? 'bg-rose-100 text-rose-800' :
+                        'bg-amber-100 text-amber-800'
+                      }`}>
+                        {inv.status}
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      <select
+                        value={inv.status}
+                        onChange={(e) => handleChangeStatus(inv.id, e.target.value)}
+                        className="text-xs bg-surface-container border border-outline-variant rounded px-2 py-1 font-medium"
+                      >
+                        <option value="draft">Draft</option>
+                        <option value="sent">Sent</option>
+                        <option value="paid">Paid</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
