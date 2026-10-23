@@ -51,10 +51,15 @@ export default function Layout({
   return (
     <div className="min-h-screen bg-background text-on-surface font-body-md">
       {/* Sidebar Navigation */}
-      <aside className="bg-deep-charcoal dark:bg-on-surface h-screen w-64 fixed left-0 top-0 border-r border-outline-variant transition-all duration-200 ease-in-out flex flex-col py-6 z-50">
+      <aside className="bg-deep-charcoal h-screen w-64 fixed left-0 top-0 border-r border-white/10 transition-all duration-200 ease-in-out flex flex-col py-6 z-50">
         <div className="px-6 mb-8">
-          <h1 className="font-headline-md text-headline-md text-surface-white tracking-tight">Mandtech Admin</h1>
-          <p className="text-surface-variant text-body-sm opacity-70">Technical Operations</p>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-white text-base" style={{ fontVariationSettings: "'FILL' 1" }}>precision_manufacturing</span>
+            </div>
+            <h1 className="font-headline-md text-headline-md text-white tracking-tight">Mandtech</h1>
+          </div>
+          <p className="text-white/40 text-body-sm pl-9">Admin Portal</p>
         </div>
 
         <nav className="flex-1 space-y-1">
@@ -64,12 +69,15 @@ export default function Layout({
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
-                className={`w-[calc(100%-16px)] flex items-center px-4 py-3 transition-colors mx-2 rounded-lg text-left ${
+                className={`w-[calc(100%-16px)] flex items-center px-4 py-3 transition-all mx-2 rounded-lg text-left relative ${
                   isActive
-                    ? 'bg-primary-container text-on-primary-container font-bold'
-                    : 'text-surface-variant hover:text-surface-white hover:bg-secondary'
+                    ? 'bg-primary/15 text-primary font-bold border border-primary/30'
+                    : 'text-white/55 hover:text-white hover:bg-white/8'
                 }`}
               >
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
+                )}
                 <span 
                   className="material-symbols-outlined mr-3"
                   style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
@@ -83,15 +91,15 @@ export default function Layout({
         </nav>
 
         {/* User Profile Footer */}
-        <div className="px-6 mt-auto flex items-center gap-3 pt-6 border-t border-secondary/20">
-          <div className="w-10 h-10 rounded-full bg-primary-container text-on-primary-container font-bold flex items-center justify-center overflow-hidden border border-outline-variant shrink-0">
+        <div className="px-6 mt-auto flex items-center gap-3 pt-6 border-t border-white/10">
+          <div className="w-10 h-10 rounded-full bg-primary text-white font-bold flex items-center justify-center overflow-hidden shrink-0">
             {currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : 'A'}
           </div>
           <div className="overflow-hidden min-w-0">
-            <p className="text-surface-white font-bold text-body-sm truncate">
+            <p className="text-white font-bold text-body-sm truncate">
               {currentUser?.email || 'admin@mandtech.com.ng'}
             </p>
-            <span className="text-[10px] bg-primary/30 text-primary-fixed border border-primary/40 px-1.5 py-0.5 rounded font-bold uppercase">
+            <span className="text-[10px] bg-primary/25 text-primary-light border border-primary/40 px-1.5 py-0.5 rounded font-bold uppercase">
               {currentUser?.role || 'admin'}
             </span>
           </div>
@@ -99,7 +107,7 @@ export default function Layout({
       </aside>
 
       {/* Top Navigation Bar */}
-      <header className="fixed top-0 right-0 left-64 h-16 bg-surface dark:bg-surface-dim border-b border-outline-variant flex justify-between items-center px-gutter z-40">
+      <header className="fixed top-0 right-0 left-64 h-16 bg-white border-b border-outline-variant flex justify-between items-center px-gutter z-40">
         <div className="flex items-center gap-4 flex-1">
           <div className="relative group max-w-md w-full">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary group-focus-within:text-primary transition-colors">
@@ -110,7 +118,7 @@ export default function Layout({
               placeholder={searchPlaceholder}
               value={searchQuery}
               onChange={handleSearchChange}
-              className="w-full pl-10 pr-4 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-sm focus:ring-2 focus:ring-primary-container focus:border-primary outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-surface-container border border-outline-variant rounded-lg text-body-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
             />
           </div>
         </div>
@@ -137,7 +145,7 @@ export default function Layout({
             </button>
             <button 
               onClick={handleLogoutClick}
-              className="bg-deep-charcoal text-surface-white px-4 py-2 rounded font-button text-button hover:bg-error transition-all font-bold"
+              className="bg-black text-white px-4 py-2 rounded font-button text-button hover:bg-primary transition-all font-bold"
             >
               Logout
             </button>

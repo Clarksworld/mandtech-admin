@@ -39,20 +39,21 @@ export default function RegisterPage({ onRegisterSuccess, onSwitchToLogin }: Reg
   };
 
   return (
-    <div className="min-h-screen bg-deep-charcoal text-surface-white flex items-center justify-center p-6 relative overflow-hidden font-body-md">
+    <div className="min-h-screen bg-black text-white flex items-center justify-center p-6 relative overflow-hidden font-body-md">
       {/* Background Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/25 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="w-full max-w-md bg-surface-white/5 border border-outline-variant/30 backdrop-blur-xl rounded-2xl p-8 shadow-2xl relative z-10">
+      <div className="w-full max-w-md bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl relative z-10">
         {/* Header Branding */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-primary-container/20 border border-primary-container text-primary rounded-xl flex items-center justify-center mx-auto mb-4 shadow-inner">
+          <div className="w-14 h-14 bg-primary/20 border border-primary/50 text-primary rounded-xl flex items-center justify-center mx-auto mb-4 shadow-inner">
             <span className="material-symbols-outlined text-3xl">person_add</span>
           </div>
           <h1 className="font-headline-md text-headline-md text-white tracking-tight text-2xl font-bold">
             Staff & Admin Registration
           </h1>
-          <p className="text-surface-variant text-xs mt-1">
+          <p className="text-white/40 text-xs mt-1">
             Provision new credentials on Mandtech REST API
           </p>
         </div>

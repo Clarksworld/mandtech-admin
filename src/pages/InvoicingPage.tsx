@@ -175,7 +175,7 @@ export default function InvoicingPage() {
           <button
             onClick={() => handleSaveInvoice('sent')}
             disabled={saving}
-            className="px-5 py-2.5 bg-primary-container text-on-primary-container font-button text-sm rounded-lg hover:shadow-lg transition-all flex items-center gap-2 shadow-sm font-bold disabled:opacity-50"
+            className="px-5 py-2.5 bg-primary text-white font-button text-sm rounded-lg hover:bg-black transition-all flex items-center gap-2 shadow-sm font-bold disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-lg">send</span> 
             {saving ? 'Processing...' : 'Generate & Issue'}
@@ -185,12 +185,12 @@ export default function InvoicingPage() {
 
       {/* Split Layout */}
       {saveSuccessMsg && (
-        <div className="mb-4 p-4 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-lg flex items-center justify-between text-sm font-medium">
+        <div className="mb-4 p-4 bg-primary/10 border border-primary/30 text-primary-dark rounded-lg flex items-center justify-between text-sm font-medium">
           <span className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-emerald-600">check_circle</span>
+            <span className="material-symbols-outlined text-primary">check_circle</span>
             {saveSuccessMsg}
           </span>
-          <button onClick={() => setSaveSuccessMsg(null)} className="text-emerald-700 hover:text-emerald-900">✕</button>
+          <button onClick={() => setSaveSuccessMsg(null)} className="text-primary-dark hover:text-black">✕</button>
         </div>
       )}
       {saveErrorMsg && (
@@ -209,7 +209,7 @@ export default function InvoicingPage() {
 
           {/* Customer Details Card */}
           <div className="bg-surface-white border border-outline-variant p-6 rounded-lg relative shadow-sm">
-            <div className="absolute top-0 left-0 w-full h-1 bg-primary-container rounded-t-lg"></div>
+            <div className="absolute top-0 left-0 w-full h-1 bg-primary rounded-t-lg"></div>
             <h3 className="font-label-bold text-primary uppercase text-xs tracking-widest mb-4">
               Customer & Order Metadata
             </h3>
@@ -498,9 +498,12 @@ export default function InvoicingPage() {
             className="bg-white w-full max-w-[700px] flex flex-col relative overflow-hidden shadow-xl"
             style={{ aspectRatio: '1 / 1.414', padding: '48px' }}
           >
-            {/* Orange Header Band */}
-            <div className="absolute top-0 left-0 w-full h-10 bg-primary-container flex items-center px-10 justify-between">
-              <span className="text-white font-headline-md font-bold tracking-tighter text-base">MANDTECH</span>
+            {/* Black Header Band with Green Accent */}
+            <div className="absolute top-0 left-0 w-full h-10 bg-black flex items-center px-10 justify-between border-b-2 border-primary">
+              <span className="text-white font-headline-md font-bold tracking-tighter text-base flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-primary inline-block"></span>
+                MANDTECH
+              </span>
               <span className="text-white/80 font-label-bold text-[9px] uppercase tracking-widest">
                 Official Industrial Document
               </span>
@@ -578,7 +581,7 @@ export default function InvoicingPage() {
             <div className="mt-6 grid grid-cols-12 gap-6">
               <div className="col-span-7">
                 <p className="font-label-bold text-[10px] text-secondary mb-1 uppercase">Banking Details</p>
-                <div className="bg-surface p-3 border-l-2 border-primary-container text-[10px] space-y-0.5">
+                <div className="bg-surface p-3 border-l-2 border-primary text-[10px] space-y-0.5">
                   <p><span className="font-bold">Account Name:</span> Mandtech Solutions Ltd</p>
                   <p><span className="font-bold">Bank:</span> Lloyds Bank Industrial</p>
                   <p><span className="font-bold">Sort Code:</span> 00-11-22</p>
@@ -650,10 +653,10 @@ export default function InvoicingPage() {
                     <td className="py-3 font-bold text-on-surface">{fmt(inv.total)}</td>
                     <td className="py-3">
                       <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
-                        inv.status === 'paid' ? 'bg-emerald-100 text-emerald-800' :
-                        inv.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                        inv.status === 'paid' ? 'bg-primary/15 text-primary-dark border border-primary/30' :
+                        inv.status === 'sent' ? 'bg-black text-white' :
                         inv.status === 'cancelled' ? 'bg-rose-100 text-rose-800' :
-                        'bg-amber-100 text-amber-800'
+                        'bg-surface-container text-secondary'
                       }`}>
                         {inv.status}
                       </span>

@@ -8,56 +8,70 @@ export default {
   theme: {
     extend: {
       colors: {
-        "surface-container-high": "#e5e9eb",
-        "surface-bright": "#f7fafc",
-        "status-gray": "#6C757D",
-        "on-tertiary-fixed-variant": "#00497e",
-        "tertiary": "#1d619e",
-        "on-error": "#ffffff",
-        "secondary-container": "#e4e2e1",
-        "surface-container-low": "#f1f4f6",
-        "outline": "#8a7264",
-        "surface-dim": "#d7dadc",
-        "surface-white": "#FFFFFF",
-        "surface-tint": "#964900",
-        "surface-container-lowest": "#ffffff",
-        "outline-variant": "#ddc1b0",
-        "error-container": "#ffdad6",
-        "on-tertiary": "#ffffff",
-        "secondary-fixed-dim": "#c8c6c6",
-        "primary-fixed": "#ffdcc6",
-        "on-primary": "#ffffff",
-        "on-secondary-fixed-variant": "#474747",
-        "tertiary-fixed-dim": "#9fcaff",
-        "primary-fixed-dim": "#ffb786",
-        "surface-container-highest": "#e0e3e5",
-        "surface": "#f7fafc",
-        "tertiary-container": "#6ba4e5",
-        "on-surface": "#181c1e",
-        "on-error-container": "#93000a",
-        "on-tertiary-fixed": "#001c37",
-        "secondary": "#5f5e5e",
-        "on-secondary": "#ffffff",
-        "background": "#f7fafc",
-        "surface-container": "#ebeef0",
-        "on-primary-fixed": "#311300",
-        "inverse-surface": "#2d3133",
-        "secondary-fixed": "#e4e2e1",
-        "on-background": "#181c1e",
-        "primary": "#964900",
-        "on-primary-container": "#5b2a00",
-        "deep-charcoal": "#212529",
-        "inverse-primary": "#ffb786",
-        "on-secondary-fixed": "#1b1c1c",
-        "tertiary-fixed": "#d2e4ff",
-        "error": "#ba1a1a",
-        "on-tertiary-container": "#003965",
-        "on-primary-fixed-variant": "#723600",
-        "on-surface-variant": "#564336",
-        "on-secondary-container": "#656464",
-        "primary-container": "#f58220",
-        "inverse-on-surface": "#eef1f3",
-        "surface-variant": "#e0e3e5"
+        /* ── Brand Core ── */
+        "primary":                   "#54b435",   /* Mandtech Green */
+        "primary-dark":              "#3d8a27",   /* Darker green shade */
+        "primary-light":             "#78c95d",   /* Lighter green shade */
+        "on-primary":                "#ffffff",
+        "primary-container":         "#d6f0cd",   /* Very light green tint */
+        "on-primary-container":      "#1a4d0e",
+        "primary-fixed":             "#eaf7e5",   /* Palest green wash */
+        "primary-fixed-dim":         "#b8e6a8",
+        "on-primary-fixed":          "#0e2f07",
+        "on-primary-fixed-variant":  "#2d7019",
+        "inverse-primary":           "#78c95d",
+
+        /* ── Neutral / Surface (black → white scale) ── */
+        "deep-charcoal":             "#000000",   /* Pure black sidebar */
+        "on-surface":                "#0d0d0d",
+        "on-background":             "#0d0d0d",
+        "inverse-surface":           "#1a1a1a",
+        "inverse-on-surface":        "#f2f2f2",
+        "surface":                   "#f8faf8",   /* Very slight green-tinted white */
+        "surface-white":             "#ffffff",
+        "surface-bright":            "#ffffff",
+        "surface-dim":               "#dde3dd",
+        "surface-variant":           "#ced6ce",
+        "surface-container-lowest":  "#ffffff",
+        "surface-container-low":     "#f0f5f0",
+        "surface-container":         "#e8efe8",
+        "surface-container-high":    "#dde6dd",
+        "surface-container-highest": "#d2ddd2",
+        "surface-tint":              "#54b435",
+
+        /* ── Secondary (dark grey from black palette) ── */
+        "secondary":                 "#4a4a4a",
+        "on-secondary":              "#ffffff",
+        "secondary-container":       "#e0e0e0",
+        "on-secondary-container":    "#5c5c5c",
+        "secondary-fixed":           "#e0e0e0",
+        "secondary-fixed-dim":       "#bfbfbf",
+        "on-secondary-fixed":        "#1a1a1a",
+        "on-secondary-fixed-variant":"#404040",
+
+        /* ── Tertiary (deeper green variant) ── */
+        "tertiary":                  "#2e7d1f",
+        "on-tertiary":               "#ffffff",
+        "tertiary-container":        "#b3e6a0",
+        "on-tertiary-container":     "#0a3205",
+        "tertiary-fixed":            "#c8f0b8",
+        "tertiary-fixed-dim":        "#96d882",
+        "on-tertiary-fixed":         "#062803",
+        "on-tertiary-fixed-variant": "#1e5c14",
+
+        /* ── Outline / Borders ── */
+        "outline":                   "#6b7a6b",
+        "outline-variant":           "#c0ccb8",
+
+        /* ── Error ── */
+        "error":                     "#ba1a1a",
+        "on-error":                  "#ffffff",
+        "error-container":           "#ffdad6",
+        "on-error-container":        "#93000a",
+
+        /* ── Misc ── */
+        "status-gray":               "#6c757d",
+        "background":                "#f8faf8",
       },
       borderRadius: {
         "DEFAULT": "0.125rem",

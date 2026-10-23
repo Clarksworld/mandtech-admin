@@ -89,10 +89,10 @@ const initialCards: KanbanCard[] = [
 ];
 
 const columns: { id: KanbanStatus; label: string; color: string }[] = [
-  { id: 'new', label: 'New Requests', color: 'border-primary-container' },
-  { id: 'inprogress', label: 'Assigned / In Progress', color: 'border-tertiary' },
+  { id: 'new', label: 'New Requests', color: 'border-primary' },
+  { id: 'inprogress', label: 'Assigned / In Progress', color: 'border-black' },
   { id: 'awaiting', label: 'Awaiting Parts', color: 'border-status-gray' },
-  { id: 'completed', label: 'Completed', color: 'border-on-tertiary-fixed-variant' },
+  { id: 'completed', label: 'Completed', color: 'border-primary-dark' },
 ];
 
 const priorityLevelBadgeStyles: Record<string, { bg: string; text: string; icon: string }> = {
@@ -299,7 +299,7 @@ export default function ProjectsPage() {
           </button>
           <button
             onClick={() => setShowNewTaskModal(true)}
-            className="flex items-center gap-2 bg-primary-container text-on-primary-container px-5 py-2 rounded font-button text-sm hover:shadow-md transition-all shadow-sm font-bold"
+            className="flex items-center gap-2 bg-primary text-white hover:bg-black px-5 py-2 rounded font-button text-sm hover:shadow-md transition-all shadow-sm font-bold"
           >
             <span className="material-symbols-outlined text-lg">add</span> New Project
           </button>
@@ -486,7 +486,7 @@ export default function ProjectsPage() {
               </div>
               <div>
                 <p className="text-[10px] text-surface-variant uppercase font-bold tracking-wider">Est. Profit Margin</p>
-                <p className="text-xl font-bold text-primary-container mt-0.5">+{portfolioProfitMargin}%</p>
+                <p className="text-xl font-bold text-primary mt-0.5">+{portfolioProfitMargin}%</p>
               </div>
             </div>
           </div>
@@ -496,9 +496,9 @@ export default function ProjectsPage() {
               <span>Sprint Budget Utilization</span>
               <span>{fmtNGN(totalPortfolioSpend)} spent</span>
             </div>
-            <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
+            <div className="w-full bg-white/20 rounded-full h-2.5 overflow-hidden">
               <div
-                className="bg-primary-container h-full rounded-full transition-all duration-1000"
+                className="bg-primary h-full rounded-full transition-all duration-1000"
                 style={{ width: `${Math.round((totalPortfolioSpend / totalPortfolioBudget) * 100)}%` }}
               ></div>
             </div>
@@ -523,7 +523,7 @@ export default function ProjectsPage() {
                 <div
                   key={i}
                   className={`w-6 rounded-t transition-all duration-500 ${
-                    i === 5 ? 'bg-primary-container' : 'bg-secondary/40'
+                    i === 5 ? 'bg-primary' : 'bg-white/20'
                   }`}
                   style={{ height: `${h}%` }}
                 ></div>

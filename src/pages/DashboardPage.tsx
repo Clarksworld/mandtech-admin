@@ -86,7 +86,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
     <div className="space-y-8 animate-fade-in pb-16">
       {/* 1. Staff Attendance & API Banner */}
       <section className="bg-surface-white border border-outline-variant rounded-lg p-6 flex items-center justify-between shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-1 h-full bg-primary-container"></div>
+        <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center">
             <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -97,8 +97,8 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
             <div className="flex items-center gap-3">
               <p className="font-label-bold text-primary uppercase text-xs tracking-wider">Staff Attendance</p>
               {apiOnline === true && (
-                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="inline-flex items-center gap-1 text-[10px] bg-primary/15 text-primary-dark px-2 py-0.5 rounded-full font-bold border border-primary/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
                   REST API Connected
                 </span>
               )}
@@ -159,7 +159,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
         {/* Metric 3 - Equipment & Parts (Clickable) */}
         <div 
           onClick={() => onNavigate?.('inventory')}
-          className="bg-surface-white border border-outline-variant rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 border-t-4 border-t-primary-container cursor-pointer group hover:border-primary-container"
+          className="bg-surface-white border border-outline-variant rounded-lg p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 border-t-4 border-t-primary cursor-pointer group"
           title="Click to view Inventory catalog"
         >
           <div className="flex justify-between items-start mb-4">

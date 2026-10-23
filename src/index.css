@@ -7,11 +7,11 @@
 @layer base {
   body {
     @apply bg-background font-body-md text-on-surface antialiased;
-    background-color: #F4F7F9;
+    background-color: #f8faf8;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-headline-md text-deep-charcoal;
+    @apply font-headline-md text-on-surface;
   }
 }
 
@@ -21,20 +21,20 @@
   vertical-align: middle;
 }
 
-/* Custom premium scrollbar styling */
+/* Custom premium scrollbar styling — Mandtech Green brand */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f4f6;
+  background: #f0f5f0;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d7dadc;
+  background: #c0ccb8;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #964900;
+  background: #54b435;
 }
 
 .scroll-hide::-webkit-scrollbar {

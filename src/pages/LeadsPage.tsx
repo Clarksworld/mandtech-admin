@@ -206,7 +206,7 @@ export default function LeadsPage({ onNavigate }: LeadsPageProps) {
           </button>
           <button 
             onClick={() => onNavigate?.('invoicing')}
-            className="bg-primary text-surface-white px-4 py-2 rounded font-button text-sm hover:opacity-90 transition-opacity flex items-center gap-2 shadow-sm font-bold"
+            className="bg-primary text-white hover:bg-black px-4 py-2 rounded font-button text-sm transition-colors flex items-center gap-2 shadow-sm font-bold"
           >
             <span className="material-symbols-outlined text-lg">receipt_long</span> Create Quote / Invoice
           </button>
@@ -249,7 +249,7 @@ export default function LeadsPage({ onNavigate }: LeadsPageProps) {
           </div>
           <button 
             onClick={() => window.scrollTo({ top: 300, behavior: 'smooth' })}
-            className="z-10 mt-6 border border-surface-variant text-surface-white px-4 py-2 rounded font-button text-sm hover:bg-secondary transition-colors w-full"
+            className="z-10 mt-6 border border-white/30 text-white px-4 py-2 rounded font-button text-sm hover:bg-primary hover:text-black hover:border-primary transition-colors w-full font-bold"
           >
             View Unclaimed Queue
           </button>
@@ -264,7 +264,7 @@ export default function LeadsPage({ onNavigate }: LeadsPageProps) {
         <div className="p-4 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
           <span className="font-label-bold text-label-bold text-on-surface-variant text-xs flex items-center gap-2">
             ACTIVE LEAD REPOSITORY
-            <span className="bg-primary-container text-on-primary-container px-2 py-0.5 rounded text-[10px] font-bold">
+            <span className="bg-primary/15 text-primary-dark px-2 py-0.5 rounded text-[10px] font-bold border border-primary/25">
               Showing Active ({leads.length})
             </span>
           </span>
@@ -312,15 +312,15 @@ export default function LeadsPage({ onNavigate }: LeadsPageProps) {
                   <td className="p-4">
                     <span
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                        lead.status === 'In Progress'
-                          ? 'bg-amber-100 text-amber-900 border border-amber-200'
-                          : lead.status === 'Completed'
-                          ? 'bg-emerald-100 text-emerald-900 border border-emerald-200'
-                          : 'bg-blue-100 text-blue-900 border border-blue-200'
+                        lead.status === 'Completed'
+                          ? 'bg-primary/15 text-primary-dark border border-primary/30'
+                          : lead.status === 'In Progress'
+                          ? 'bg-black text-white border border-black'
+                          : 'bg-surface-container text-secondary border border-outline-variant'
                       }`}
                     >
                       <span className={`w-1.5 h-1.5 rounded-full ${
-                        lead.status === 'In Progress' ? 'bg-amber-500' : lead.status === 'Completed' ? 'bg-emerald-500' : 'bg-blue-500'
+                        lead.status === 'Completed' ? 'bg-primary' : lead.status === 'In Progress' ? 'bg-primary' : 'bg-secondary'
                       }`}></span>
                       {lead.status}
                     </span>
@@ -329,7 +329,7 @@ export default function LeadsPage({ onNavigate }: LeadsPageProps) {
                     {lead.assignedAdmin === 'Unassigned' ? (
                       <button
                         onClick={() => handleClaimLead(lead.id)}
-                        className="bg-primary text-surface-white px-3 py-1 rounded text-xs font-button hover:opacity-90 font-bold"
+                        className="bg-primary text-white hover:bg-black px-3 py-1 rounded text-xs font-button transition-colors font-bold"
                       >
                         Claim Lead
                       </button>
@@ -405,7 +405,7 @@ export default function LeadsPage({ onNavigate }: LeadsPageProps) {
               {selectedLead.assignedAdmin === 'Unassigned' && (
                 <button
                   onClick={() => handleClaimLead(selectedLead.id)}
-                  className="px-4 py-2 bg-primary text-surface-white rounded text-sm font-bold hover:opacity-90"
+                  className="px-4 py-2 bg-primary text-white hover:bg-black rounded text-sm font-bold transition-colors"
                 >
                   Claim &amp; Take Assignment
                 </button>

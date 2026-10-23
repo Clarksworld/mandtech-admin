@@ -104,7 +104,7 @@ export default function InventoryPage({ searchQuery }: { searchQuery?: string })
             onClick={() => { setActiveTab('products'); setSelectedCategory('All'); }}
             className={`px-5 py-2 rounded-lg font-button text-sm flex items-center gap-2 transition-all ${
               activeTab === 'products'
-                ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                ? 'bg-primary text-white font-bold shadow-sm'
                 : 'bg-surface-container text-secondary hover:bg-surface-container-high'
             }`}
           >
@@ -115,7 +115,7 @@ export default function InventoryPage({ searchQuery }: { searchQuery?: string })
             onClick={() => { setActiveTab('parts'); setSelectedCategory('All'); }}
             className={`px-5 py-2 rounded-lg font-button text-sm flex items-center gap-2 transition-all ${
               activeTab === 'parts'
-                ? 'bg-primary-container text-on-primary-container font-bold shadow-sm'
+                ? 'bg-primary text-white font-bold shadow-sm'
                 : 'bg-surface-container text-secondary hover:bg-surface-container-high'
             }`}
           >
@@ -125,8 +125,8 @@ export default function InventoryPage({ searchQuery }: { searchQuery?: string })
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-1 rounded-full text-xs font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="inline-flex items-center gap-1.5 bg-primary/10 text-primary-dark border border-primary/20 px-3 py-1 rounded-full text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
             Backend API Connected
           </span>
         </div>
@@ -246,7 +246,7 @@ export default function InventoryPage({ searchQuery }: { searchQuery?: string })
           </span>
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-primary-container text-on-primary-container px-4 py-1.5 rounded font-button text-xs flex items-center gap-1.5 hover:shadow-md transition-shadow font-bold"
+            className="bg-primary text-white hover:bg-black px-4 py-1.5 rounded font-button text-xs flex items-center gap-1.5 hover:shadow-md transition-all font-bold"
           >
             <span className="material-symbols-outlined text-base">add</span> Add New {activeTab === 'products' ? 'Equipment' : 'Part'}
           </button>
@@ -313,7 +313,7 @@ export default function InventoryPage({ searchQuery }: { searchQuery?: string })
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] rounded font-bold uppercase">
+                        <span className="px-2 py-0.5 bg-primary/15 text-primary-dark text-[10px] rounded font-bold uppercase">
                           {item.badge || 'IN STOCK'}
                         </span>
                       </td>
@@ -463,7 +463,7 @@ export default function InventoryPage({ searchQuery }: { searchQuery?: string })
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary-container text-on-primary-container font-bold rounded text-sm hover:shadow-md"
+                  className="px-4 py-2 bg-primary text-white font-bold rounded text-sm hover:bg-black transition-colors"
                 >
                   Submit to API
                 </button>
