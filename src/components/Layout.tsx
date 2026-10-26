@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { getStoredUser, logoutAdmin } from '../services/authService';
 
-type TabType = 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects';
+export type TabType = 'dashboard' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'projects';
 
 interface LayoutProps {
   activeTab: TabType;
@@ -42,7 +42,7 @@ export default function Layout({
 
   const navItems: { id: TabType; label: string; icon: string }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { id: 'leads', label: 'Leads', icon: 'person_search' },
+    { id: 'enquiries', label: 'Enquiries', icon: 'contact_support' },
     { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
     { id: 'invoicing', label: 'Invoicing', icon: 'receipt_long' },
     { id: 'projects', label: 'Projects', icon: 'account_tree' },
@@ -64,7 +64,7 @@ export default function Layout({
 
         <nav className="flex-1 space-y-1">
           {navItems.map((item) => {
-            const isActive = activeTab === item.id;
+            const isActive = activeTab === item.id || (item.id === 'enquiries' && activeTab === 'leads');
             return (
               <button
                 key={item.id}

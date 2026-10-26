@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import Layout from './components/Layout';
+import type { TabType } from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
-import LeadsPage from './pages/LeadsPage';
+import EnquiriesPage from './pages/EnquiriesPage';
 import InventoryPage from './pages/InventoryPage';
 import InvoicingPage from './pages/InvoicingPage';
 import ProjectsPage from './pages/ProjectsPage';
@@ -10,10 +11,9 @@ import RegisterPage from './pages/RegisterPage';
 import { isAuthenticated } from './services/authService';
 import './index.css';
 
-type TabType = 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects';
-
 const searchPlaceholders: Record<TabType, string> = {
   dashboard: 'Search industrial portal...',
+  enquiries: 'Search enquiries by name, company, email…',
   leads: 'Search requests...',
   inventory: 'Quick find machinery...',
   invoicing: 'Search invoices, equipment, or clients...',
@@ -61,8 +61,10 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardPage onNavigate={handleTabChange} />;
+      case 'enquiries':
+        return <EnquiriesPage searchQuery={searchQuery} onNavigate={handleTabChange} />;
       case 'leads':
-        return <LeadsPage onNavigate={handleTabChange} />;
+        return <EnquiriesPage searchQuery={searchQuery} onNavigate={handleTabChange} />;
       case 'inventory':
         return <InventoryPage searchQuery={searchQuery} />;
       case 'invoicing':
@@ -78,7 +80,7 @@ export default function App() {
     <Layout
       activeTab={activeTab}
       onTabChange={handleTabChange}
-      searchPlaceholder={searchPlaceholders[activeTab]}
+      searchPlaceholder={searchPlaceholders[activeTab] || 'Search...'}
       onSearch={setSearchQuery}
       onLogout={handleLogout}
     >

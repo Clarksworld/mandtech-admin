@@ -50,7 +50,24 @@ export interface Inquiry {
   equipment_interests?: string[];
   newsletter_opt_in?: boolean;
   status?: 'new' | 'in_review' | 'responded' | 'closed';
+  assigned_to?: string | null;
+  assigned_name?: string | null;
   created_at?: string;
+  updated_at?: string;
+}
+
+export interface InquiryStats {
+  total: number;
+  new: number;
+  in_review: number;
+  responded: number;
+  closed: number;
+  by_class?: {
+    new_purchase: number;
+    rental: number;
+    spare_parts: number;
+    service_request: number;
+  };
 }
 
 export interface ServiceTicket {

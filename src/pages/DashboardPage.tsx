@@ -5,7 +5,7 @@ import { fetchInquiries } from '../services/leadsService';
 import { Inquiry } from '../services/types';
 
 interface DashboardPageProps {
-  onNavigate?: (tab: 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects') => void;
+  onNavigate?: (tab: 'dashboard' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'projects') => void;
 }
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {
@@ -123,7 +123,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Metric 1 - Inquiries */}
         <div 
-          onClick={() => onNavigate?.('leads')}
+          onClick={() => onNavigate?.('enquiries')}
           className="bg-surface-white border border-outline-variant rounded-lg p-6 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer group"
         >
           <div className="flex justify-between items-start mb-4">
@@ -189,7 +189,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           <div className="flex items-center justify-between mb-2 px-1">
             <h3 className="font-headline-md text-headline-md">Live Incoming Requests</h3>
             <button 
-              onClick={() => onNavigate?.('leads')}
+              onClick={() => onNavigate?.('enquiries')}
               className="text-primary font-button text-button text-sm hover:underline flex items-center gap-1"
             >
               Manage In Leads <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -199,7 +199,7 @@ export default function DashboardPage({ onNavigate }: DashboardPageProps) {
           {displayRequests.map((req, idx) => (
             <div
               key={req.id || idx}
-              onClick={() => onNavigate?.('leads')}
+              onClick={() => onNavigate?.('enquiries')}
               className="bg-surface-white border border-outline-variant rounded-lg p-4 flex gap-4 items-center hover:bg-surface-container-low transition-colors duration-200 cursor-pointer"
             >
               <div className="w-12 h-12 bg-surface-container-high rounded flex items-center justify-center shrink-0">
