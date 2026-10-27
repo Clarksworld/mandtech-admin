@@ -3,9 +3,10 @@ import { checkBackendHealth } from '../services/authService';
 import { fetchDashboardStats, DashboardStats } from '../services/dashboardService';
 import { fetchInquiries } from '../services/leadsService';
 import { Inquiry } from '../services/types';
+import type { TabType } from '../components/Layout';
 
 interface DashboardPageProps {
-  onNavigate?: (tab: 'dashboard' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'projects') => void;
+  onNavigate?: (tab: TabType) => void;
 }
 
 export default function DashboardPage({ onNavigate }: DashboardPageProps) {

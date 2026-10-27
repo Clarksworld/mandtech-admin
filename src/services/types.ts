@@ -93,3 +93,34 @@ export interface AuthResponse {
   user: User;
   message?: string;
 }
+
+export interface CompressorRequest {
+  id: string;
+  compressor_type: 'ELECTRIC AIR COMPRESSOR' | 'DIESEL AIR COMPRESSOR';
+  brand: 'ATLAS COPCO' | 'SULLAIR' | 'INGERSOLL RAND' | 'DENAIR';
+  company_name: string;
+  email: string;
+  phone: string;
+  status: 'new' | 'contacted' | 'quoted' | 'closed';
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CompressorRequestStats {
+  total: number;
+  new: number;
+  contacted: number;
+  quoted: number;
+  closed: number;
+  types: {
+    electric: number;
+    diesel: number;
+  };
+  brands: {
+    atlas_copco: number;
+    sullair: number;
+    ingersoll_rand: number;
+    denair: number;
+  };
+}
