@@ -98,6 +98,7 @@ export interface CompressorRequest {
   id: string;
   compressor_type: 'ELECTRIC AIR COMPRESSOR' | 'DIESEL AIR COMPRESSOR';
   brand: 'ATLAS COPCO' | 'SULLAIR' | 'INGERSOLL RAND' | 'DENAIR';
+  condition?: 'NEW' | 'USED';
   company_name: string;
   email: string;
   phone: string;
@@ -149,5 +150,69 @@ export interface SparePartsRequestStats {
     sullair: number;
     ingersoll_rand: number;
     denair: number;
+  };
+}
+
+
+export interface LeasingRequest {
+  id: string;
+  compressor_type: string;
+  brand: string;
+  duration: string;
+  hub: string;
+  company_name: string;
+  email: string;
+  phone: string;
+  status: 'new' | 'contacted' | 'quoted' | 'closed';
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LeasingRequestStats {
+  total: number;
+  new: number;
+  contacted: number;
+  quoted: number;
+  closed: number;
+  brands: {
+    atlas_copco: number;
+    sullair: number;
+    ingersoll_rand: number;
+    denair: number;
+  };
+  types: {
+    electric: number;
+    diesel: number;
+  };
+}
+
+export interface LubricantRequest {
+  id: string;
+  brand: string;
+  fluid_type: string;
+  volume: string;
+  hub: string;
+  company_name: string;
+  email: string;
+  phone: string;
+  status: 'new' | 'contacted' | 'quoted' | 'closed';
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LubricantRequestStats {
+  total: number;
+  new: number;
+  contacted: number;
+  quoted: number;
+  closed: number;
+  brands: {
+    atlas_copco: number;
+    sullair: number;
+    ingersoll_rand: number;
+    denair: number;
+    others: number;
   };
 }

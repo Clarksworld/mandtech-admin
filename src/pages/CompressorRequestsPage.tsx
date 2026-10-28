@@ -394,9 +394,20 @@ export default function CompressorRequestsPage({ onNavigate: _onNavigate }: Comp
 
                     {/* Brand */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="bg-gray-100 text-gray-800 border border-gray-200 px-2 py-0.5 rounded text-xs font-bold">
-                        {req.brand}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="bg-gray-100 text-gray-800 border border-gray-200 px-2 py-0.5 rounded text-xs font-bold">
+                          {req.brand}
+                        </span>
+                        {req.condition && (
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                            req.condition === 'NEW'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}>
+                            {req.condition}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Status */}
@@ -493,7 +504,18 @@ export default function CompressorRequestsPage({ onNavigate: _onNavigate }: Comp
                 </div>
                 <div>
                   <span className="text-gray-500 block">Selected Brand:</span>
-                  <strong className="text-gray-900">{selectedRequest.brand}</strong>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <strong className="text-gray-900">{selectedRequest.brand}</strong>
+                    {selectedRequest.condition && (
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                        selectedRequest.condition === 'NEW'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
+                        {selectedRequest.condition}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 

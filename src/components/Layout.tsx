@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { getStoredUser, logoutAdmin } from '../services/authService';
 
-export type TabType = 'dashboard' | 'compressor-requests' | 'spare-parts-requests' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'projects';
+export type TabType = 'dashboard' | 'compressor-requests' | 'spare-parts-requests' | 'leasing-requests' | 'lubricant-requests' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'projects';
 
 interface LayoutProps {
   activeTab: TabType;
@@ -44,6 +44,8 @@ export default function Layout({
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
     { id: 'compressor-requests', label: 'Compressor Request', icon: 'air' },
     { id: 'spare-parts-requests', label: 'Spare Parts Requests', icon: 'build' },
+    { id: 'leasing-requests', label: 'Leasing & Rentals', icon: 'car_rental' },
+    { id: 'lubricant-requests', label: 'Lubricants & Fluids', icon: 'water_drop' },
     { id: 'enquiries', label: 'Enquiries', icon: 'contact_support' },
     { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
     { id: 'invoicing', label: 'Invoicing', icon: 'receipt_long' },
