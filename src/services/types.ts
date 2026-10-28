@@ -124,3 +124,30 @@ export interface CompressorRequestStats {
     denair: number;
   };
 }
+
+export interface SparePartsRequest {
+  id: string;
+  brand: "ATLAS COPCO" | "SULLAIR" | "INGERSOLL RAND" | "DENAIR";
+  part_name: string;
+  company_name: string;
+  email: string;
+  phone: string;
+  status: "new" | "contacted" | "quoted" | "closed";
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SparePartsRequestStats {
+  total: number;
+  new: number;
+  contacted: number;
+  quoted: number;
+  closed: number;
+  brands: {
+    atlas_copco: number;
+    sullair: number;
+    ingersoll_rand: number;
+    denair: number;
+  };
+}
