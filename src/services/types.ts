@@ -216,3 +216,50 @@ export interface LubricantRequestStats {
     others: number;
   };
 }
+
+export interface OrderItem {
+  id: string;
+  name: string;
+  category?: string;
+  brand?: string;
+  quantity?: number;
+  price?: number;
+}
+
+export interface TrackingStep {
+  status: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  location?: string;
+}
+
+export type OrderStatus = 'order_placed' | 'confirmed' | 'processing' | 'in_transit' | 'delivered' | 'cancelled';
+
+export interface OrderRecord {
+  id: string;
+  user_id?: string | null;
+  customer_name: string;
+  company?: string;
+  email: string;
+  phone: string;
+  delivery_address: string;
+  fulfillment_hub: string;
+  items: OrderItem[];
+  subtotal: number;
+  status: OrderStatus;
+  tracking_history: TrackingStep[];
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderStats {
+  total: number;
+  order_placed: number;
+  confirmed: number;
+  processing: number;
+  in_transit: number;
+  delivered: number;
+  cancelled: number;
+}

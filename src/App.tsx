@@ -7,6 +7,7 @@ import CompressorRequestsPage from './pages/CompressorRequestsPage';
 import SparePartsRequestsPage from './pages/SparePartsRequestsPage';
 import LeasingRequestsPage from './pages/LeasingRequestsPage';
 import LubricantsRequestsPage from './pages/LubricantsRequestsPage';
+import OrdersPage from './pages/OrdersPage';
 import InventoryPage from './pages/InventoryPage';
 import InvoicingPage from './pages/InvoicingPage';
 import ProjectsPage from './pages/ProjectsPage';
@@ -17,6 +18,7 @@ import './index.css';
 
 const searchPlaceholders: Record<TabType, string> = {
   dashboard: 'Search industrial portal...',
+  orders: 'Search orders by order ID, company, email, hub...',
   'compressor-requests': 'Search compressor requests by company, brand, email…',
   'spare-parts-requests': 'Search spare parts requests by company, brand, part name, email…',
   'leasing-requests': 'Search leasing requests by company, duration, hub, email…',
@@ -69,6 +71,8 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardPage onNavigate={handleTabChange} />;
+      case 'orders':
+        return <OrdersPage onNavigate={handleTabChange} />;
       case 'compressor-requests':
         return <CompressorRequestsPage onNavigate={handleTabChange} />;
       case 'spare-parts-requests':
