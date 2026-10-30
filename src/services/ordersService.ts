@@ -16,11 +16,17 @@ export const ordersService = {
 
     const qs = query.toString();
     const endpoint = `/api/admin/orders${qs ? `?${qs}` : ''}`;
-    return apiRequest<{ orders: OrderRecord[]; total: number; page: number; limit: number }>(endpoint);
+    const raw = await apiRequest<any>(endpoint);
+    const orders: OrderRecord[] = raw.orders || raw.data || [];
+    const total: number = raw.total ?? raw.pagination?.total ?? orders.length;
+    const page: number = raw.page ?? raw.pagination?.page ?? 1;
+    const limit: number = raw.limit ?? raw.pagination?.limit ?? 20;
+    return { orders, total, page, limit };
   },
 
   async getStats(): Promise<OrderStats> {
-    return apiRequest<OrderStats>('/api/admin/orders/stats');
+    const raw = await apiRequest<any>('/api/admin/orders/stats');
+    return raw.data || raw;
   },
 
   async updateStatus(
@@ -45,4 +51,3 @@ export const ordersService = {
     });
   },
 };
-

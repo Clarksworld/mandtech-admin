@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getStoredUser, logoutAdmin } from '../services/authService';
+import { MandtechLogo } from './Logo';
 
 export type TabType = 'dashboard' | 'orders' | 'compressor-requests' | 'spare-parts-requests' | 'leasing-requests' | 'lubricant-requests' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'projects';
 
@@ -58,13 +59,16 @@ export default function Layout({
       {/* Sidebar Navigation */}
       <aside className="bg-deep-charcoal h-screen w-64 fixed left-0 top-0 border-r border-white/10 transition-all duration-200 ease-in-out flex flex-col py-6 z-50">
         <div className="px-6 mb-8">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-white text-base" style={{ fontVariationSettings: "'FILL' 1" }}>precision_manufacturing</span>
+          <div className="flex flex-col gap-2">
+            <div className="cursor-pointer" onClick={() => onTabChange('dashboard')}>
+              <MandtechLogo height={26} variant="dark" />
             </div>
-            <h1 className="font-headline-md text-headline-md text-white tracking-tight">Mandtech</h1>
+            <div className="flex items-center gap-2 pl-0.5">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary-light border border-primary/40 px-2 py-0.5 rounded">
+                Admin & Operations Hub
+              </span>
+            </div>
           </div>
-          <p className="text-white/40 text-body-sm pl-9">Admin Portal</p>
         </div>
 
         <nav className="flex-1 space-y-1">

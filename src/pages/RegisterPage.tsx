@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createAdmin } from '../services/authService';
+import { MandtechLogo } from '../components/Logo';
 
 interface RegisterPageProps {
   onRegisterSuccess: () => void;
@@ -47,8 +48,8 @@ export default function RegisterPage({ onRegisterSuccess, onSwitchToLogin }: Reg
       <div className="w-full max-w-md bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl relative z-10">
         {/* Header Branding */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-primary/20 border border-primary/50 text-primary rounded-xl flex items-center justify-center mx-auto mb-4 shadow-inner">
-            <span className="material-symbols-outlined text-3xl">person_add</span>
+          <div className="flex justify-center mb-4">
+            <MandtechLogo height={36} variant="dark" />
           </div>
           <h1 className="font-headline-md text-headline-md text-white tracking-tight text-2xl font-bold">
             Staff & Admin Registration
