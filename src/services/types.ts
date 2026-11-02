@@ -165,6 +165,11 @@ export interface LeasingRequest {
   phone: string;
   status: 'new' | 'contacted' | 'quoted' | 'closed';
   notes?: string | null;
+  contact_name?: string | null;
+  delivery_address?: string | null;
+  equipment_needed?: string | null;
+  flow_rate_cfm?: string | null;
+  desired_pressure?: string | null;
   created_at: string;
   updated_at: string;
 }

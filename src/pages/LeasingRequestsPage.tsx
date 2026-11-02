@@ -464,6 +464,18 @@ export default function LeasingRequestsPage({ onNavigate: _onNavigate }: Leasing
                 <h4 className="text-xs font-bold text-gray-500 uppercase mb-1">Company &amp; Contact</h4>
                 <div className="p-3 bg-white border border-gray-200 rounded-lg space-y-1">
                   <p className="font-bold text-gray-900 text-base">{selectedRequest.company_name}</p>
+                  {selectedRequest.contact_name && (
+                    <p className="text-gray-700 text-xs font-semibold flex items-center gap-1">
+                      <span className="material-symbols-outlined text-xs">person</span>
+                      <span>Contact: {selectedRequest.contact_name}</span>
+                    </p>
+                  )}
+                  {selectedRequest.delivery_address && (
+                    <p className="text-gray-600 text-xs flex items-center gap-1">
+                      <span className="material-symbols-outlined text-xs">pin_drop</span>
+                      <span>Delivery Site: {selectedRequest.delivery_address}</span>
+                    </p>
+                  )}
                   <p className="text-gray-600 flex items-center gap-1">
                     <span className="material-symbols-outlined text-xs">mail</span>
                     <a href={`mailto:${selectedRequest.email}`} className="text-primary hover:underline">
