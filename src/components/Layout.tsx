@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { getStoredUser, logoutAdmin } from '../services/authService';
 import { MandtechLogo } from './Logo';
 
-export type TabType = 'dashboard' | 'orders' | 'compressor-requests' | 'spare-parts-requests' | 'leasing-requests' | 'lubricant-requests' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'projects';
+export type TabType = 'dashboard' | 'orders' | 'compressor-requests' | 'spare-parts-requests' | 'leasing-requests' | 'lubricant-requests' | 'enquiries' | 'leads' | 'inventory' | 'invoicing';
 
 interface LayoutProps {
   activeTab: TabType;
@@ -51,7 +51,6 @@ export default function Layout({
     { id: 'enquiries', label: 'Enquiries', icon: 'contact_support' },
     { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
     { id: 'invoicing', label: 'Invoicing', icon: 'receipt_long' },
-    { id: 'projects', label: 'Projects', icon: 'account_tree' },
   ];
 
   return (

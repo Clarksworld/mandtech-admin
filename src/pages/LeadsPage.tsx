@@ -18,7 +18,7 @@ interface Lead {
 }
 
 interface LeadsPageProps {
-  onNavigate?: (tab: 'dashboard' | 'leads' | 'inventory' | 'invoicing' | 'projects') => void;
+  onNavigate?: (tab: 'dashboard' | 'leads' | 'inventory' | 'invoicing') => void;
 }
 
 

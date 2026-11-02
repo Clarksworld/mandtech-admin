@@ -45,3 +45,4 @@ export const MandtechLogo: React.FC<LogoProps> = ({
 };
 
 export default MandtechLogo;
+

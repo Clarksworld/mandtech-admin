@@ -71,7 +71,7 @@ function timeAgo(dateStr?: string): string {
 
 interface EnquiriesPageProps {
   searchQuery?: string;
-  onNavigate?: (tab: 'dashboard' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'projects') => void;
+  onNavigate?: (tab: 'dashboard' | 'enquiries' | 'leads' | 'inventory' | 'invoicing') => void;
 }
 
 export default function EnquiriesPage({ searchQuery: externalSearch, onNavigate: _onNavigate }: EnquiriesPageProps) {

@@ -10,7 +10,6 @@ import LubricantsRequestsPage from './pages/LubricantsRequestsPage';
 import OrdersPage from './pages/OrdersPage';
 import InventoryPage from './pages/InventoryPage';
 import InvoicingPage from './pages/InvoicingPage';
-import ProjectsPage from './pages/ProjectsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { isAuthenticated } from './services/authService';
@@ -27,7 +26,6 @@ const searchPlaceholders: Record<TabType, string> = {
   leads: 'Search requests...',
   inventory: 'Quick find machinery...',
   invoicing: 'Search invoices, equipment, or clients...',
-  projects: 'Search projects or assets...',
 };
 
 export default function App() {
@@ -89,8 +87,6 @@ export default function App() {
         return <InventoryPage searchQuery={searchQuery} />;
       case 'invoicing':
         return <InvoicingPage />;
-      case 'projects':
-        return <ProjectsPage />;
       default:
         return <DashboardPage />;
     }
