@@ -5,14 +5,15 @@ import {
   updateLubricantRequestStatus,
   deleteLubricantRequest,
 } from '../services/lubricantsRequestsService';
-import { LubricantRequest, LubricantRequestStats } from '../services/types';
+import { LubricantRequest, LubricantRequestStats, InitialQuotationData } from '../services/types';
 import type { TabType } from '../components/Layout';
 
 interface LubricantsRequestsPageProps {
   onNavigate?: (tab: TabType) => void;
+  onPrepareQuotation?: (data: InitialQuotationData) => void;
 }
 
-export default function LubricantsRequestsPage({ onNavigate: _onNavigate }: LubricantsRequestsPageProps) {
+export default function LubricantsRequestsPage({ onNavigate: _onNavigate, onPrepareQuotation }: LubricantsRequestsPageProps) {
   const [requests, setRequests] = useState<LubricantRequest[]>([]);
   const [stats, setStats] = useState<LubricantRequestStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,6 +90,30 @@ export default function LubricantsRequestsPage({ onNavigate: _onNavigate }: Lubr
       alert(`Error updating status: ${err.message}`);
     } finally {
       setStatusUpdating(false);
+    }
+  };
+
+  const handleStartQuote = (req: LubricantRequest) => {
+    if (onPrepareQuotation) {
+      onPrepareQuotation({
+        companyName: req.company_name,
+        contactPerson: req.company_name,
+        contactNumber: req.phone,
+        companyEmail: req.email,
+        companyAddress: req.hub ? `Fulfillment Hub: ${req.hub}` : '',
+        yourRef: `LUB-${req.id.slice(0, 8).toUpperCase()}`,
+        products: [
+          {
+            partNumber: `${req.brand.slice(0, 3).toUpperCase()}-FLUID`,
+            productName: `${req.brand} ${req.fluid_type} (${req.volume || 'Standard Pail/Drum'})`,
+            qty: 1,
+            unitPrice: 0,
+          },
+        ],
+        notes: req.notes || '',
+        sourceRequestId: req.id,
+        sourceType: 'lubricants',
+      });
     }
   };
 
@@ -342,6 +367,16 @@ export default function LubricantsRequestsPage({ onNavigate: _onNavigate }: Lubr
 
                     {/* Actions */}
                     <td className="py-3.5 px-4 text-right whitespace-nowrap space-x-1">
+                      {onPrepareQuotation && (
+                        <button
+                          onClick={() => handleStartQuote(req)}
+                          className="px-2.5 py-1 bg-primary text-white hover:bg-black text-xs font-bold rounded transition-colors inline-flex items-center gap-1 shadow-xs"
+                          title="Prepare official quotation for this lubricant request"
+                        >
+                          <span className="material-symbols-outlined text-sm">request_quote</span>
+                          <span>Quote</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleOpenModal(req)}
                         className="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded transition-colors"
@@ -498,9 +533,23 @@ export default function LubricantsRequestsPage({ onNavigate: _onNavigate }: Lubr
 
             {/* Modal Footer */}
             <div className="p-4 bg-gray-50 border-t border-outline-variant flex justify-between items-center">
-              <span className="text-[11px] text-gray-400">
-                Created on {new Date(selectedRequest.created_at).toLocaleString('en-GB')}
-              </span>
+              <div className="flex items-center gap-2">
+                {onPrepareQuotation && selectedRequest && (
+                  <button
+                    onClick={() => {
+                      handleStartQuote(selectedRequest);
+                      setSelectedRequest(null);
+                    }}
+                    className="px-3.5 py-2 text-xs font-bold bg-primary text-white hover:bg-black rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-sm">request_quote</span>
+                    <span>Prepare Quotation</span>
+                  </button>
+                )}
+                <span className="text-[11px] text-gray-400">
+                  Ref: LUB-{selectedRequest.id.substring(0, 8).toUpperCase()}
+                </span>
+              </div>
               <div className="space-x-2">
                 <button
                   onClick={() => setSelectedRequest(null)}
@@ -511,7 +560,7 @@ export default function LubricantsRequestsPage({ onNavigate: _onNavigate }: Lubr
                 <button
                   onClick={handleUpdateStatus}
                   disabled={statusUpdating}
-                  className="px-4 py-2 text-xs font-bold bg-primary text-white hover:bg-primary-dark rounded-lg shadow-sm transition-all disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-bold bg-black text-white hover:bg-primary-dark rounded-lg shadow-sm transition-all disabled:opacity-50"
                 >
                   {statusUpdating ? 'Updating...' : 'Save Changes'}
                 </button>

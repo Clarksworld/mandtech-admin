@@ -5,14 +5,15 @@ import {
   updateCompressorRequestStatus,
   deleteCompressorRequest,
 } from '../services/compressorRequestsService';
-import { CompressorRequest, CompressorRequestStats } from '../services/types';
+import { CompressorRequest, CompressorRequestStats, InitialQuotationData } from '../services/types';
 import type { TabType } from '../components/Layout';
 
 interface CompressorRequestsPageProps {
   onNavigate?: (tab: TabType) => void;
+  onPrepareQuotation?: (data: InitialQuotationData) => void;
 }
 
-export default function CompressorRequestsPage({ onNavigate: _onNavigate }: CompressorRequestsPageProps) {
+export default function CompressorRequestsPage({ onNavigate: _onNavigate, onPrepareQuotation }: CompressorRequestsPageProps) {
   const [requests, setRequests] = useState<CompressorRequest[]>([]);
   const [stats, setStats] = useState<CompressorRequestStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,6 +97,29 @@ export default function CompressorRequestsPage({ onNavigate: _onNavigate }: Comp
       alert(err.message || 'Failed to update quotation request status');
     } finally {
       setStatusUpdating(false);
+    }
+  };
+
+  const handleStartQuote = (req: CompressorRequest) => {
+    if (onPrepareQuotation) {
+      onPrepareQuotation({
+        companyName: req.company_name,
+        contactPerson: req.company_name,
+        contactNumber: req.phone,
+        companyEmail: req.email,
+        yourRef: `CMP-${req.id.slice(0, 8).toUpperCase()}`,
+        products: [
+          {
+            partNumber: `${req.brand.slice(0, 3).toUpperCase()}-${req.compressor_type.includes('ELECTRIC') ? 'EAC' : 'DAC'}`,
+            productName: `${req.brand} ${req.compressor_type}${req.condition ? ` (${req.condition})` : ''}`,
+            qty: 1,
+            unitPrice: 0,
+          },
+        ],
+        notes: req.notes || '',
+        sourceRequestId: req.id,
+        sourceType: 'compressor',
+      });
     }
   };
 
@@ -419,6 +443,16 @@ export default function CompressorRequestsPage({ onNavigate: _onNavigate }: Comp
 
                     {/* Actions */}
                     <td className="py-3.5 px-4 text-right whitespace-nowrap space-x-1">
+                      {onPrepareQuotation && (
+                        <button
+                          onClick={() => handleStartQuote(req)}
+                          className="px-2.5 py-1 bg-primary text-white hover:bg-black text-xs font-bold rounded transition-colors inline-flex items-center gap-1 shadow-xs"
+                          title="Prepare official quotation for this compressor"
+                        >
+                          <span className="material-symbols-outlined text-sm">request_quote</span>
+                          <span>Quote</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleOpenModal(req)}
                         className="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded transition-colors"
@@ -576,13 +610,27 @@ export default function CompressorRequestsPage({ onNavigate: _onNavigate }: Comp
             </div>
 
             <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-              <a
-                href={`mailto:${selectedRequest.email}?subject=Mandtech Formal Quotation - ${selectedRequest.brand} ${selectedRequest.compressor_type}&body=Dear ${selectedRequest.company_name} Procurement Team,%0D%0A%0D%0AReferring to your inquiry regarding ${selectedRequest.brand} ${selectedRequest.compressor_type}, please find our formal technical quotation attached.`}
-                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
-              >
-                <span className="material-symbols-outlined text-sm">outgoing_mail</span>
-                <span>Email Customer</span>
-              </a>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`mailto:${selectedRequest.email}?subject=Mandtech Formal Quotation - ${selectedRequest.brand} ${selectedRequest.compressor_type}&body=Dear ${selectedRequest.company_name} Procurement Team,%0D%0A%0D%0AReferring to your inquiry regarding ${selectedRequest.brand} ${selectedRequest.compressor_type}, please find our formal technical quotation attached.`}
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-sm">outgoing_mail</span>
+                  <span>Email</span>
+                </a>
+                {onPrepareQuotation && (
+                  <button
+                    onClick={() => {
+                      handleStartQuote(selectedRequest);
+                      setSelectedRequest(null);
+                    }}
+                    className="px-3 py-2 bg-primary text-white hover:bg-black text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                  >
+                    <span className="material-symbols-outlined text-sm">request_quote</span>
+                    <span>Prepare Quotation</span>
+                  </button>
+                )}
+              </div>
 
               <div className="flex items-center gap-2">
                 <button

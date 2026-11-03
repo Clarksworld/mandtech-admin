@@ -5,14 +5,15 @@ import {
   updateLeasingRequestStatus,
   deleteLeasingRequest,
 } from '../services/leasingRequestsService';
-import { LeasingRequest, LeasingRequestStats } from '../services/types';
+import { LeasingRequest, LeasingRequestStats, InitialQuotationData } from '../services/types';
 import type { TabType } from '../components/Layout';
 
 interface LeasingRequestsPageProps {
   onNavigate?: (tab: TabType) => void;
+  onPrepareQuotation?: (data: InitialQuotationData) => void;
 }
 
-export default function LeasingRequestsPage({ onNavigate: _onNavigate }: LeasingRequestsPageProps) {
+export default function LeasingRequestsPage({ onNavigate: _onNavigate, onPrepareQuotation }: LeasingRequestsPageProps) {
   const [requests, setRequests] = useState<LeasingRequest[]>([]);
   const [stats, setStats] = useState<LeasingRequestStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,6 +92,35 @@ export default function LeasingRequestsPage({ onNavigate: _onNavigate }: Leasing
       alert(`Error updating status: ${err.message}`);
     } finally {
       setStatusUpdating(false);
+    }
+  };
+
+  const handleStartQuote = (req: LeasingRequest) => {
+    if (onPrepareQuotation) {
+      const equipName = req.equipment_needed || req.compressor_type || 'Industrial Fleet Lease';
+      const specs = [req.flow_rate_cfm, req.desired_pressure ? `@ ${req.desired_pressure}` : ''].filter(Boolean).join(' ');
+      const durationDesc = req.duration ? `(Duration: ${req.duration})` : '';
+      const brandDesc = req.brand ? `[${req.brand}]` : '';
+
+      onPrepareQuotation({
+        companyName: req.company_name,
+        contactPerson: req.contact_name || req.company_name,
+        contactNumber: req.phone,
+        companyEmail: req.email,
+        companyAddress: req.delivery_address || (req.hub ? `Fulfillment Hub: ${req.hub}` : ''),
+        yourRef: `LSE-${req.id.slice(0, 8).toUpperCase()}`,
+        products: [
+          {
+            partNumber: 'LEASE-RENTAL',
+            productName: `${equipName} ${specs} ${brandDesc} ${durationDesc}`.trim(),
+            qty: 1,
+            unitPrice: 0,
+          },
+        ],
+        notes: req.notes || '',
+        sourceRequestId: req.id,
+        sourceType: 'leasing',
+      });
     }
   };
 
@@ -364,6 +394,16 @@ export default function LeasingRequestsPage({ onNavigate: _onNavigate }: Leasing
 
                     {/* Actions */}
                     <td className="py-3.5 px-4 text-right whitespace-nowrap space-x-1">
+                      {onPrepareQuotation && (
+                        <button
+                          onClick={() => handleStartQuote(req)}
+                          className="px-2.5 py-1 bg-primary text-white hover:bg-black text-xs font-bold rounded transition-colors inline-flex items-center gap-1 shadow-xs"
+                          title="Prepare official quotation for this lease request"
+                        >
+                          <span className="material-symbols-outlined text-sm">request_quote</span>
+                          <span>Quote</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleOpenModal(req)}
                         className="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded transition-colors"
@@ -532,9 +572,23 @@ export default function LeasingRequestsPage({ onNavigate: _onNavigate }: Leasing
 
             {/* Modal Footer */}
             <div className="p-4 bg-gray-50 border-t border-outline-variant flex justify-between items-center">
-              <span className="text-[11px] text-gray-400">
-                Created on {new Date(selectedRequest.created_at).toLocaleString('en-GB')}
-              </span>
+              <div className="flex items-center gap-2">
+                {onPrepareQuotation && selectedRequest && (
+                  <button
+                    onClick={() => {
+                      handleStartQuote(selectedRequest);
+                      setSelectedRequest(null);
+                    }}
+                    className="px-3.5 py-2 text-xs font-bold bg-primary text-white hover:bg-black rounded-lg shadow-sm transition-all flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-sm">request_quote</span>
+                    <span>Prepare Quotation</span>
+                  </button>
+                )}
+                <span className="text-[11px] text-gray-400">
+                  Ref: LSE-{selectedRequest.id.substring(0, 8).toUpperCase()}
+                </span>
+              </div>
               <div className="space-x-2">
                 <button
                   onClick={() => setSelectedRequest(null)}
@@ -545,7 +599,7 @@ export default function LeasingRequestsPage({ onNavigate: _onNavigate }: Leasing
                 <button
                   onClick={handleUpdateStatus}
                   disabled={statusUpdating}
-                  className="px-4 py-2 text-xs font-bold bg-primary text-white hover:bg-primary-dark rounded-lg shadow-sm transition-all disabled:opacity-50"
+                  className="px-4 py-2 text-xs font-bold bg-black text-white hover:bg-primary-dark rounded-lg shadow-sm transition-all disabled:opacity-50"
                 >
                   {statusUpdating ? 'Updating...' : 'Save Changes'}
                 </button>

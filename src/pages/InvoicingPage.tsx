@@ -8,6 +8,7 @@ import {
 } from '../services/invoicingService';
 import { MandtechLogo } from '../components/Logo';
 import { numberToWordsNaira } from '../utils/numberToWords';
+import type { InitialQuotationData } from '../services/types';
 
 export interface QuotationLineItem {
   id: string;
@@ -37,7 +38,12 @@ function generateDocNumber(type: 'quotation' | 'invoice' = 'quotation'): string 
   return `${prefix}-${year}-${rand}`;
 }
 
-export default function InvoicingPage() {
+interface InvoicingPageProps {
+  initialData?: InitialQuotationData | null;
+  onClearInitialData?: () => void;
+}
+
+export default function InvoicingPage({ initialData, onClearInitialData }: InvoicingPageProps = {}) {
   // Document Type
   const [docType, setDocType] = useState<'quotation' | 'invoice'>('quotation');
 
@@ -48,6 +54,32 @@ export default function InvoicingPage() {
   const [companyAddress, setCompanyAddress] = useState('Plot 14, Commercial Boulevard, Victoria Island, Lagos State');
   const [companyEmail, setCompanyEmail] = useState('t.adeleke@apex-mfg.com');
   const [salesPerson, setSalesPerson] = useState('Engr. Samuel Okon (Technical Sales Lead)');
+
+  // Auto-populate when initialData is supplied from a storefront request
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.companyName) setCompanyName(initialData.companyName);
+      if (initialData.contactPerson) setContactPerson(initialData.contactPerson);
+      if (initialData.contactNumber) setContactNumber(initialData.contactNumber);
+      if (initialData.companyEmail) setCompanyEmail(initialData.companyEmail);
+      if (initialData.companyAddress) setCompanyAddress(initialData.companyAddress);
+      if (initialData.yourRef) setYourRef(initialData.yourRef);
+      if (initialData.salesPerson) setSalesPerson(initialData.salesPerson);
+
+      if (initialData.products && initialData.products.length > 0) {
+        setProducts(
+          initialData.products.map((p, idx) => ({
+            id: `init_${idx}_${Date.now()}`,
+            sn: idx + 1,
+            partNumber: p.partNumber || '',
+            productName: p.productName || '',
+            qty: p.qty || 1,
+            unitPrice: p.unitPrice || 0,
+          }))
+        );
+      }
+    }
+  }, [initialData]);
 
   // Document Metadata
   const [documentNo, setDocumentNo] = useState(() => generateDocNumber('quotation'));
@@ -403,6 +435,27 @@ export default function InvoicingPage() {
           </button>
         </div>
       </div>
+
+      {/* Storefront Request Auto-populated Banner */}
+      {initialData && (
+        <div className="mb-4 p-4 bg-primary/10 border-2 border-primary/30 rounded-xl flex items-center justify-between text-xs font-semibold text-deep-charcoal shadow-sm no-print">
+          <div className="flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-primary text-xl">auto_awesome</span>
+            <span>
+              Pre-filled from storefront request <strong>{initialData.yourRef || 'Reference'}</strong> for{' '}
+              <strong>{initialData.companyName}</strong>. Review items and set unit prices below to finalize quotation!
+            </span>
+          </div>
+          {onClearInitialData && (
+            <button
+              onClick={onClearInitialData}
+              className="px-2.5 py-1 bg-white border border-outline-variant hover:border-black rounded text-[11px] text-deep-charcoal font-bold transition-all shadow-2xs"
+            >
+              Dismiss
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Notifications */}
       {saveSuccessMsg && (

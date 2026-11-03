@@ -268,3 +268,24 @@ export interface OrderStats {
   delivered: number;
   cancelled: number;
 }
+
+export interface InitialQuotationItem {
+  partNumber?: string;
+  productName: string;
+  qty: number;
+  unitPrice?: number;
+}
+
+export interface InitialQuotationData {
+  companyName?: string;
+  contactPerson?: string;
+  contactNumber?: string;
+  companyEmail?: string;
+  companyAddress?: string;
+  yourRef?: string;
+  salesPerson?: string;
+  products?: InitialQuotationItem[];
+  notes?: string;
+  sourceRequestId?: string;
+  sourceType?: 'compressor' | 'spare_parts' | 'leasing' | 'lubricants' | 'order' | 'enquiry';
+}

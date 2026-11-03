@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ordersService } from '../services/ordersService';
-import type { OrderRecord, OrderStats, OrderStatus } from '../services/types';
+import type { OrderRecord, OrderStats, OrderStatus, InitialQuotationData } from '../services/types';
 import type { TabType } from '../components/Layout';
 
 interface OrdersPageProps {
   onNavigate?: (tab: TabType) => void;
+  onPrepareQuotation?: (data: InitialQuotationData) => void;
 }
 
 const STATUS_CONFIG: Record<
@@ -43,7 +44,7 @@ const STATUS_CONFIG: Record<
   },
 };
 
-export default function OrdersPage({ onNavigate: _onNavigate }: OrdersPageProps) {
+export default function OrdersPage({ onNavigate: _onNavigate, onPrepareQuotation }: OrdersPageProps) {
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [stats, setStats] = useState<OrderStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,6 +136,37 @@ export default function OrdersPage({ onNavigate: _onNavigate }: OrdersPageProps)
       setUpdateError(err.message || 'Failed to update order status');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleStartQuote = (order: OrderRecord) => {
+    if (onPrepareQuotation) {
+      onPrepareQuotation({
+        companyName: order.company || order.customer_name,
+        contactPerson: order.customer_name,
+        contactNumber: order.phone,
+        companyEmail: order.email,
+        companyAddress: order.delivery_address || (order.fulfillment_hub ? `Hub: ${order.fulfillment_hub}` : ''),
+        yourRef: `ORD-${order.id.slice(0, 8).toUpperCase()}`,
+        products: (order.items && order.items.length > 0)
+          ? order.items.map((item, idx) => ({
+              partNumber: item.id || `ITEM-${idx + 1}`,
+              productName: item.name + (item.brand ? ` (${item.brand})` : ''),
+              qty: item.quantity || 1,
+              unitPrice: item.price || 0,
+            }))
+          : [
+              {
+                partNumber: 'YARD-REQUISITION',
+                productName: `Storefront Cart Order #${order.id.slice(0, 8).toUpperCase()}`,
+                qty: 1,
+                unitPrice: order.subtotal || 0,
+              },
+            ],
+        notes: order.notes || '',
+        sourceRequestId: order.id,
+        sourceType: 'order',
+      });
     }
   };
 
@@ -407,7 +439,17 @@ export default function OrdersPage({ onNavigate: _onNavigate }: OrdersPageProps)
                           })}
                         </div>
                       </td>
-                      <td className="py-4 px-6 text-right">
+                      <td className="py-4 px-6 text-right whitespace-nowrap space-x-2">
+                        {onPrepareQuotation && (
+                          <button
+                            onClick={() => handleStartQuote(order)}
+                            className="px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-black text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-xs"
+                            title="Prepare official quotation for this order"
+                          >
+                            <span className="material-symbols-outlined text-sm">request_quote</span>
+                            <span>Quote</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => openStatusModal(order)}
                           className="px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/30 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm"
@@ -624,21 +666,38 @@ export default function OrdersPage({ onNavigate: _onNavigate }: OrdersPageProps)
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-outline-variant">
-                <button
-                  type="button"
-                  onClick={() => setSelectedOrder(null)}
-                  className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={updating}
-                  className="px-6 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50"
-                >
-                  {updating ? 'Updating...' : 'Publish Status Update'}
-                </button>
+              <div className="flex items-center justify-between pt-4 border-t border-outline-variant">
+                <div>
+                  {onPrepareQuotation && selectedOrder && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleStartQuote(selectedOrder);
+                        setSelectedOrder(null);
+                      }}
+                      className="px-4 py-2 rounded-lg bg-black hover:bg-primary text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                    >
+                      <span className="material-symbols-outlined text-sm">request_quote</span>
+                      <span>Prepare Quotation</span>
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedOrder(null)}
+                    className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={updating}
+                    className="px-6 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50"
+                  >
+                    {updating ? 'Updating...' : 'Publish Status Update'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

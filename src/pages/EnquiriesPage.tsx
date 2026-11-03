@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchInquiries, fetchInquiryStats, updateInquiryStatus, assignInquiry, deleteInquiry } from '../services/enquiriesService';
-import { Inquiry, InquiryStats } from '../services/types';
+import { Inquiry, InquiryStats, InitialQuotationData } from '../services/types';
 import { getStoredUser } from '../services/authService';
+import type { TabType } from '../components/Layout';
 
 const EQUIPMENT_CLASSES = [
   { value: 'all', label: 'All Classes' },
@@ -71,10 +72,11 @@ function timeAgo(dateStr?: string): string {
 
 interface EnquiriesPageProps {
   searchQuery?: string;
-  onNavigate?: (tab: 'dashboard' | 'enquiries' | 'leads' | 'inventory' | 'invoicing') => void;
+  onNavigate?: (tab: TabType) => void;
+  onPrepareQuotation?: (data: InitialQuotationData) => void;
 }
 
-export default function EnquiriesPage({ searchQuery: externalSearch, onNavigate: _onNavigate }: EnquiriesPageProps) {
+export default function EnquiriesPage({ searchQuery: externalSearch, onNavigate: _onNavigate, onPrepareQuotation }: EnquiriesPageProps) {
   const [enquiries, setEnquiries] = useState<Inquiry[]>([]);
   const [stats, setStats] = useState<InquiryStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -192,6 +194,32 @@ export default function EnquiriesPage({ searchQuery: externalSearch, onNavigate:
   ];
 
   const byClass = stats?.by_class;
+
+  const handleStartQuote = (enq: Inquiry) => {
+    if (onPrepareQuotation) {
+      const interests: string[] = Array.isArray(enq.equipment_interests) ? enq.equipment_interests : [];
+      const interestSummary = interests.join(', ') || enq.message?.slice(0, 50) || 'Equipment Supply / Consultation';
+
+      onPrepareQuotation({
+        companyName: enq.company || enq.name,
+        contactPerson: enq.name,
+        contactNumber: enq.phone || '',
+        companyEmail: enq.email,
+        yourRef: `ENQ-${enq.id?.slice(0, 8).toUpperCase() || 'GENERAL'}`,
+        products: [
+          {
+            partNumber: 'ENQ-COMMERCIAL',
+            productName: `Requisition: ${interestSummary}`,
+            qty: 1,
+            unitPrice: 0,
+          },
+        ],
+        notes: enq.message || '',
+        sourceRequestId: enq.id,
+        sourceType: 'enquiry',
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -402,10 +430,20 @@ export default function EnquiriesPage({ searchQuery: externalSearch, onNavigate:
                       </td>
                       <td className="p-4 text-right" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
+                          {onPrepareQuotation && (
+                            <button
+                              onClick={() => handleStartQuote(enq)}
+                              className="bg-primary text-white hover:bg-black px-2.5 py-1 rounded text-xs font-bold transition-colors inline-flex items-center gap-1 shadow-xs"
+                              title="Prepare quotation for this enquiry"
+                            >
+                              <span className="material-symbols-outlined text-sm">request_quote</span>
+                              <span>Quote</span>
+                            </button>
+                          )}
                           {!enq.assigned_name && (
                             <button
                               onClick={() => handleClaimEnquiry(enq)}
-                              className="bg-primary text-white hover:bg-black px-3 py-1 rounded text-xs font-bold transition-colors"
+                              className="bg-surface-container hover:bg-black hover:text-white text-deep-charcoal border border-outline-variant px-2.5 py-1 rounded text-xs font-bold transition-colors"
                             >
                               Claim
                             </button>
@@ -552,13 +590,27 @@ export default function EnquiriesPage({ searchQuery: externalSearch, onNavigate:
 
             {/* Modal footer */}
             <div className="p-5 border-t border-outline-variant flex items-center justify-between gap-3 bg-surface-container-low">
-              <button
-                onClick={() => selectedEnquiry.id && handleDelete(selectedEnquiry.id)}
-                className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-bold hover:bg-red-50 transition-colors"
-              >
-                Delete Enquiry
-              </button>
-              <div className="flex gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => selectedEnquiry.id && handleDelete(selectedEnquiry.id)}
+                  className="px-3 py-2 border border-red-200 text-red-600 rounded-lg text-xs font-bold hover:bg-red-50 transition-colors"
+                >
+                  Delete
+                </button>
+                {onPrepareQuotation && selectedEnquiry && (
+                  <button
+                    onClick={() => {
+                      handleStartQuote(selectedEnquiry);
+                      setSelectedEnquiry(null);
+                    }}
+                    className="px-3.5 py-2 bg-primary text-white hover:bg-black rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-sm">request_quote</span>
+                    <span>Prepare Quotation</span>
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
                 <button
                   onClick={() => setSelectedEnquiry(null)}
                   className="px-4 py-2 border border-outline rounded-lg text-sm text-secondary hover:bg-surface-container"

@@ -13,6 +13,7 @@ import InvoicingPage from './pages/InvoicingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { isAuthenticated } from './services/authService';
+import type { InitialQuotationData } from './services/types';
 import './index.css';
 
 const searchPlaceholders: Record<TabType, string> = {
@@ -33,10 +34,17 @@ export default function App() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
+  const [quotationDraft, setQuotationDraft] = useState<InitialQuotationData | null>(null);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     setSearchQuery('');
+  };
+
+  const handlePrepareQuotation = (data: InitialQuotationData) => {
+    setQuotationDraft(data);
+    setActiveTab('invoicing');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleLoginSuccess = () => {
@@ -70,23 +78,28 @@ export default function App() {
       case 'dashboard':
         return <DashboardPage onNavigate={handleTabChange} />;
       case 'orders':
-        return <OrdersPage onNavigate={handleTabChange} />;
+        return <OrdersPage onNavigate={handleTabChange} onPrepareQuotation={handlePrepareQuotation} />;
       case 'compressor-requests':
-        return <CompressorRequestsPage onNavigate={handleTabChange} />;
+        return <CompressorRequestsPage onNavigate={handleTabChange} onPrepareQuotation={handlePrepareQuotation} />;
       case 'spare-parts-requests':
-        return <SparePartsRequestsPage onNavigate={handleTabChange} />;
+        return <SparePartsRequestsPage onNavigate={handleTabChange} onPrepareQuotation={handlePrepareQuotation} />;
       case 'leasing-requests':
-        return <LeasingRequestsPage onNavigate={handleTabChange} />;
+        return <LeasingRequestsPage onNavigate={handleTabChange} onPrepareQuotation={handlePrepareQuotation} />;
       case 'lubricant-requests':
-        return <LubricantsRequestsPage onNavigate={handleTabChange} />;
+        return <LubricantsRequestsPage onNavigate={handleTabChange} onPrepareQuotation={handlePrepareQuotation} />;
       case 'enquiries':
-        return <EnquiriesPage searchQuery={searchQuery} onNavigate={handleTabChange} />;
+        return <EnquiriesPage searchQuery={searchQuery} onNavigate={handleTabChange} onPrepareQuotation={handlePrepareQuotation} />;
       case 'leads':
-        return <EnquiriesPage searchQuery={searchQuery} onNavigate={handleTabChange} />;
+        return <EnquiriesPage searchQuery={searchQuery} onNavigate={handleTabChange} onPrepareQuotation={handlePrepareQuotation} />;
       case 'inventory':
         return <InventoryPage searchQuery={searchQuery} />;
       case 'invoicing':
-        return <InvoicingPage />;
+        return (
+          <InvoicingPage
+            initialData={quotationDraft}
+            onClearInitialData={() => setQuotationDraft(null)}
+          />
+        );
       default:
         return <DashboardPage />;
     }

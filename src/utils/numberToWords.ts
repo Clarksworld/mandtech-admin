@@ -105,3 +105,4 @@ export function numberToWordsNaira(amount: number): string {
 
   return nairaWords;
 }
+

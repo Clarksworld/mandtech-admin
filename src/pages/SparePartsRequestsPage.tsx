@@ -5,14 +5,15 @@ import {
   updateSparePartsRequestStatus,
   deleteSparePartsRequest,
 } from "../services/sparePartsRequestsService";
-import { SparePartsRequest, SparePartsRequestStats } from "../services/types";
+import { SparePartsRequest, SparePartsRequestStats, InitialQuotationData } from "../services/types";
 import type { TabType } from "../components/Layout";
 
 interface SparePartsRequestsPageProps {
   onNavigate?: (tab: TabType) => void;
+  onPrepareQuotation?: (data: InitialQuotationData) => void;
 }
 
-export default function SparePartsRequestsPage({ onNavigate: _onNavigate }: SparePartsRequestsPageProps) {
+export default function SparePartsRequestsPage({ onNavigate: _onNavigate, onPrepareQuotation }: SparePartsRequestsPageProps) {
   const [requests, setRequests] = useState<SparePartsRequest[]>([]);
   const [stats, setStats] = useState<SparePartsRequestStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,6 +94,29 @@ export default function SparePartsRequestsPage({ onNavigate: _onNavigate }: Spar
       alert(err.message || "Failed to update spare parts request status");
     } finally {
       setStatusUpdating(false);
+    }
+  };
+
+  const handleStartQuote = (req: SparePartsRequest) => {
+    if (onPrepareQuotation) {
+      onPrepareQuotation({
+        companyName: req.company_name,
+        contactPerson: req.company_name,
+        contactNumber: req.phone,
+        companyEmail: req.email,
+        yourRef: `SPR-${req.id.slice(0, 8).toUpperCase()}`,
+        products: [
+          {
+            partNumber: `${req.brand.slice(0, 3).toUpperCase()}-GENUINE`,
+            productName: `${req.brand} Genuine Component: ${req.part_name}`,
+            qty: 1,
+            unitPrice: 0,
+          },
+        ],
+        notes: req.notes || '',
+        sourceRequestId: req.id,
+        sourceType: 'spare_parts',
+      });
     }
   };
 
@@ -377,6 +401,16 @@ export default function SparePartsRequestsPage({ onNavigate: _onNavigate }: Spar
                     {/* Actions */}
                     <td className="py-3.5 px-4 text-right">
                       <div className="inline-flex items-center gap-1">
+                        {onPrepareQuotation && (
+                          <button
+                            onClick={() => handleStartQuote(req)}
+                            className="px-2.5 py-1.5 bg-primary text-white hover:bg-black font-bold text-xs rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                            title="Prepare official quotation for this spare part"
+                          >
+                            <span className="material-symbols-outlined text-sm">request_quote</span>
+                            <span>Quote</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => handleOpenModal(req)}
                           className="px-2.5 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs rounded-lg transition-colors flex items-center gap-1"
@@ -525,25 +559,42 @@ export default function SparePartsRequestsPage({ onNavigate: _onNavigate }: Spar
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-outline-variant">
-              <button
-                type="button"
-                onClick={() => setSelectedRequest(null)}
-                className="px-4 py-2 border border-outline-variant rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={statusUpdating}
-                onClick={handleSaveModal}
-                className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold shadow-sm disabled:opacity-50 flex items-center gap-1.5"
-              >
-                {statusUpdating && (
-                  <span className="material-symbols-outlined text-sm animate-spin">sync</span>
+            <div className="flex justify-between items-center pt-2 border-t border-outline-variant">
+              <div>
+                {onPrepareQuotation && selectedRequest && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleStartQuote(selectedRequest);
+                      setSelectedRequest(null);
+                    }}
+                    className="px-3 py-2 bg-primary text-white hover:bg-black rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">request_quote</span>
+                    <span>Prepare Quotation</span>
+                  </button>
                 )}
-                <span>Save Changes</span>
-              </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRequest(null)}
+                  className="px-4 py-2 border border-outline-variant rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={statusUpdating}
+                  onClick={handleSaveModal}
+                  className="px-4 py-2 bg-black hover:bg-primary text-white rounded-lg text-sm font-bold shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {statusUpdating && (
+                    <span className="material-symbols-outlined text-sm animate-spin">sync</span>
+                  )}
+                  <span>Save Changes</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
