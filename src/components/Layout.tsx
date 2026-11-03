@@ -50,7 +50,7 @@ export default function Layout({
     { id: 'lubricant-requests', label: 'Lubricants & Fluids', icon: 'water_drop' },
     { id: 'enquiries', label: 'Enquiries', icon: 'contact_support' },
     { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
-    { id: 'invoicing', label: 'Invoicing', icon: 'receipt_long' },
+    { id: 'invoicing', label: 'Quotation & Invoicing', icon: 'receipt_long' },
   ];
 
   return (

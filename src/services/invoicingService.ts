@@ -1,18 +1,30 @@
 import { apiRequest } from './api';
 
 export interface LineItem {
-  description: string;
+  id?: string;
+  sn?: number;
+  part_number?: string;
+  product_name?: string;
+  description?: string;
   qty: number;
   unit_price: number;
+  total?: number;
 }
 
 export interface Invoice {
   id: string;
   invoice_number: string;
+  doc_type?: 'quotation' | 'invoice';
   company: string;
   contact_name: string;
+  contact_phone?: string;
   email: string;
   billing_address?: string;
+  sales_person?: string;
+  client_ref?: string;
+  bank_details?: string;
+  amount_in_words?: string;
+  terms?: string;
   line_items: LineItem[];
   discount_pct: number;
   vat_rate_pct: number;
@@ -50,10 +62,18 @@ export async function fetchInvoices(params: {
 }
 
 export async function createInvoice(payload: {
+  doc_type?: 'quotation' | 'invoice';
+  invoice_number?: string;
   company: string;
   contact_name: string;
+  contact_phone?: string;
   email: string;
   billing_address?: string;
+  sales_person?: string;
+  client_ref?: string;
+  bank_details?: string;
+  amount_in_words?: string;
+  terms?: string;
   line_items: LineItem[];
   discount_pct?: number;
   vat_rate_pct?: number;

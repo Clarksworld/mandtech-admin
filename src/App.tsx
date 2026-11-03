@@ -25,7 +25,7 @@ const searchPlaceholders: Record<TabType, string> = {
   enquiries: 'Search enquiries by name, company, email…',
   leads: 'Search requests...',
   inventory: 'Quick find machinery...',
-  invoicing: 'Search invoices, equipment, or clients...',
+  invoicing: 'Search quotations, invoices, equipment, or clients...',
 };
 
 export default function App() {
