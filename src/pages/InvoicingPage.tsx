@@ -10,6 +10,7 @@ import { MandtechLogo } from '../components/Logo';
 import { BrandLogosFooter } from '../components/BrandLogosFooter';
 import { numberToWordsNaira } from '../utils/numberToWords';
 import type { InitialQuotationData } from '../services/types';
+import type { TabType } from '../components/Layout';
 
 export type TemplateMode = 'parts' | 'leasing';
 
@@ -71,9 +72,10 @@ function generateDocNumber(mode: TemplateMode, _type: 'INVOICE' | 'QUOTATION' = 
 interface InvoicingPageProps {
   initialData?: InitialQuotationData | null;
   onClearInitialData?: () => void;
+  onNavigate?: (tab: TabType) => void;
 }
 
-export default function InvoicingPage({ initialData, onClearInitialData }: InvoicingPageProps = {}) {
+export default function InvoicingPage({ initialData, onClearInitialData, onNavigate }: InvoicingPageProps = {}) {
   // Template Mode & Document Title
   const [templateMode, setTemplateMode] = useState<TemplateMode>('parts');
   const [docHeading, setDocHeading] = useState<'INVOICE' | 'QUOTATION'>('INVOICE');
@@ -183,6 +185,10 @@ export default function InvoicingPage({ initialData, onClearInitialData }: Invoi
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
   const [pastInvoices, setPastInvoices] = useState<Invoice[]>([]);
+
+  // Sending Modal states
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [sendMethod, setSendMethod] = useState<'both' | 'whatsapp' | 'email'>('both');
 
   // Active Rows
   const activeRows = templateMode === 'leasing' ? leasingRows : partsRows;
@@ -465,6 +471,126 @@ export default function InvoicingPage({ initialData, onClearInitialData }: Invoi
     window.print();
   };
 
+  // Dispatch quotation directly via Email / WhatsApp / Both and set status to sent
+  const handleSendToCustomer = async () => {
+    if (!companyName.trim()) {
+      setSaveErrorMsg('Please enter the customer company name before dispatching.');
+      return;
+    }
+
+    setSaving(true);
+    setSaveErrorMsg(null);
+    setSaveSuccessMsg(null);
+
+    const serviceLineItems: ServiceLineItem[] = activeRows.map((r, idx) => ({
+      sn: idx + 1,
+      part_number: r.productNo,
+      product_name: r.description,
+      description: r.description,
+      qty: r.qty || 1,
+      unit_price: r.unitPrice || 0,
+      total: r.amount || 0,
+    }));
+
+    try {
+      const res = await createInvoice({
+        doc_type: templateMode === 'leasing' ? 'quotation' : 'invoice',
+        invoice_number: documentNo.trim(),
+        company: companyName.trim(),
+        contact_name: attentionName.trim(),
+        contact_phone: contactPhone.trim(),
+        email: contactEmail.trim(),
+        billing_address: `${deliveryAddress}, ${city}, ${state}`.trim(),
+        sales_person: 'Mandtech Sales/Service (08186538644)',
+        client_ref: yourRef.trim(),
+        bank_details: bankDetails.trim(),
+        amount_in_words: effectiveWords,
+        terms: templateMode === 'leasing' ? leasingTermsList.join('\n') : partsTermsList.join('\n'),
+        line_items: serviceLineItems,
+        discount_pct: 0,
+        vat_rate_pct: 7.5,
+        delivery_terms: templateMode === 'leasing' ? 'Customer Mobilization' : 'Delivered within 21 days',
+        currency: 'NGN',
+        notes: `Scope: ${tableScopeTitle}. Ref: ${yourRef}`,
+        status: 'sent',
+      });
+
+      // Construct WhatsApp message
+      const linesSummary = activeRows
+        .map(
+          (r, idx) =>
+            `${idx + 1}. *${r.description}* (Qty: ${r.qty || 1}) — ₦${fmtNumber(r.amount)}`
+        )
+        .join('\n');
+
+      const whatsappText = `*MANDTECH SERVICES LIMITED - OFFICIAL QUOTATION*
+━━━━━━━━━━━━━━━━━━━━━━━━
+📄 *Quotation Ref:* ${documentNo}
+📅 *Date:* ${docDate}
+🏢 *Client:* ${companyName}
+👤 *Attention:* ${attentionName}
+📍 *Site Location:* ${deliveryAddress}, ${city}, ${state}
+
+*SCOPE:* ${tableScopeTitle}
+
+*LINE ITEMS:*
+${linesSummary}
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+💰 *Subtotal:* ₦${fmtNumber(subtotal)}
+🏛️ *VAT (7.5%):* ₦${fmtNumber(vatAmount)}
+💵 *TOTAL AMOUNT:* ₦${fmtNumber(total)}
+🗣️ *In Words:* ${effectiveWords}
+━━━━━━━━━━━━━━━━━━━━━━━━
+*Terms:* 100% Down Payment & Issue of LPO (or Rental upfront).
+*Bank:* Sterling Bank Plc | 01433839162 (Mandtech Services Ltd)
+
+Our engineering desk is on standby to facilitate mobilization.
+📞 Hotline: 08186538644 | info@mandtech.com.ng`;
+
+      const cleanPhone = (contactPhone || '').replace(/[^0-9]/g, '');
+      const intlPhone = cleanPhone.startsWith('0')
+        ? '234' + cleanPhone.slice(1)
+        : cleanPhone.startsWith('234')
+        ? cleanPhone
+        : cleanPhone;
+
+      if (sendMethod === 'whatsapp' || sendMethod === 'both') {
+        const waUrl = `https://wa.me/${intlPhone}?text=${encodeURIComponent(whatsappText)}`;
+        window.open(waUrl, '_blank');
+      }
+
+      if (sendMethod === 'email' || sendMethod === 'both') {
+        const emailSubject = encodeURIComponent(
+          `Commercial Quotation ${documentNo} - Mandtech Services Limited - ${companyName}`
+        );
+        const emailBody = encodeURIComponent(
+          `Dear ${attentionName},\n\nPlease find below our official commercial quotation ${documentNo} for ${companyName}.\n\nTotal Payable: NGN ${fmtNumber(
+            total
+          )}\nIn Words: ${effectiveWords}\n\n${whatsappText.replace(/\*/g, '')}\n\nWarm regards,\nMandtech Commercial Sales & Operations`
+        );
+        const mailtoUrl = `mailto:${contactEmail}?subject=${emailSubject}&body=${emailBody}`;
+        if (sendMethod === 'both') {
+          setTimeout(() => {
+            window.location.href = mailtoUrl;
+          }, 600);
+        } else {
+          window.location.href = mailtoUrl;
+        }
+      }
+
+      setSaveSuccessMsg(
+        `Quotation ${res.data.invoice_number} saved as SENT and dispatched via ${sendMethod.toUpperCase()}!`
+      );
+      setShowSendModal(false);
+      loadPastInvoices();
+    } catch (err: any) {
+      setSaveErrorMsg(err.message || 'Failed to dispatch quotation.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="pb-16 text-deep-charcoal font-sans">
       {/* Print CSS Rules */}
@@ -493,6 +619,25 @@ export default function InvoicingPage({ initialData, onClearInitialData }: Invoi
           }
         }
       `}</style>
+
+      {/* Navigation Sub-Tabs */}
+      <div className="flex items-center gap-2 mb-4 bg-surface-container-low p-1.5 rounded-xl border border-outline-variant w-fit no-print">
+        <button
+          className="px-3.5 py-1.5 bg-white text-deep-charcoal font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5 border border-outline-variant"
+        >
+          <span className="material-symbols-outlined text-base text-primary">edit_document</span>
+          <span>Quotation &amp; Invoice Builder</span>
+        </button>
+        {onNavigate && (
+          <button
+            onClick={() => onNavigate('proposals')}
+            className="px-3.5 py-1.5 text-secondary hover:text-deep-charcoal font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 hover:bg-white/60"
+          >
+            <span className="material-symbols-outlined text-base text-emerald-600">send_and_archive</span>
+            <span>Sent Proposals &amp; History ({pastInvoices.length})</span>
+          </button>
+        )}
+      </div>
 
       {/* Top Action & Mode Bar */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6 no-print">
@@ -594,6 +739,16 @@ export default function InvoicingPage({ initialData, onClearInitialData }: Invoi
             {saving ? 'Saving...' : 'Save Draft'}
           </button>
 
+          {/* Send to Customer (Email / WhatsApp) */}
+          <button
+            onClick={() => setShowSendModal(true)}
+            disabled={saving}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-button text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-base">forward_to_inbox</span>
+            <span>Send to Customer</span>
+          </button>
+
           {/* Issue Document */}
           <button
             onClick={() => handleSaveToDatabase('sent')}
@@ -633,9 +788,19 @@ export default function InvoicingPage({ initialData, onClearInitialData }: Invoi
         <div className="mb-4 p-4 bg-emerald-50 border border-emerald-300 text-emerald-900 rounded-lg flex items-center justify-between text-xs font-medium no-print">
           <span className="flex items-center gap-2">
             <span className="material-symbols-outlined text-emerald-600">check_circle</span>
-            {saveSuccessMsg}
+            <span>{saveSuccessMsg}</span>
           </span>
-          <button onClick={() => setSaveSuccessMsg(null)} className="text-emerald-700 hover:text-black">✕</button>
+          <div className="flex items-center gap-2">
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('proposals')}
+                className="px-2.5 py-1 bg-emerald-600 text-white rounded font-bold hover:bg-black transition-colors"
+              >
+                View in Sent Proposals →
+              </button>
+            )}
+            <button onClick={() => setSaveSuccessMsg(null)} className="text-emerald-700 hover:text-black">✕</button>
+          </div>
         </div>
       )}
       {saveErrorMsg && (
@@ -1459,6 +1624,158 @@ export default function InvoicingPage({ initialData, onClearInitialData }: Invoi
           </div>
         )}
       </section>
+
+      {/* Send to Customer Modal */}
+      {showSendModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in no-print"
+          onClick={() => setShowSendModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-outline-variant">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-emerald-600 text-2xl">
+                  forward_to_inbox
+                </span>
+                <h3 className="text-base font-black text-deep-charcoal">
+                  Send Quotation to Client
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowSendModal(false)}
+                className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-secondary mb-4 leading-relaxed">
+              Dispatch quotation <strong>{documentNo}</strong> to <strong>{companyName}</strong>. This document will be saved in the database with status <strong>SENT</strong>.
+            </p>
+
+            {/* Recipient Details */}
+            <div className="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant mb-4 text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-secondary font-medium">Customer:</span>
+                <span className="font-bold text-deep-charcoal">{attentionName} ({companyName})</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-secondary font-medium">Email:</span>
+                <span className="font-mono text-primary font-bold">{contactEmail || 'Not specified'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-secondary font-medium">WhatsApp:</span>
+                <span className="font-mono text-emerald-700 font-bold">{contactPhone || 'Not specified'}</span>
+              </div>
+              <div className="flex justify-between border-t border-outline-variant/60 pt-1 mt-1 font-bold">
+                <span className="text-secondary">Total Payable:</span>
+                <span className="font-mono text-deep-charcoal">₦{fmtNumber(total)}</span>
+              </div>
+            </div>
+
+            {/* Dispatch Method Radios */}
+            <div className="space-y-2 mb-6">
+              <label className="text-xs font-bold text-deep-charcoal block mb-1">
+                Select Dispatch Method:
+              </label>
+
+              {/* WhatsApp */}
+              <div
+                onClick={() => setSendMethod('whatsapp')}
+                className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${
+                  sendMethod === 'whatsapp'
+                    ? 'border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/20'
+                    : 'border-outline-variant hover:bg-surface-container-low'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="dispatch_mode"
+                  checked={sendMethod === 'whatsapp'}
+                  onChange={() => setSendMethod('whatsapp')}
+                  className="accent-emerald-600"
+                />
+                <div className="flex-1">
+                  <span className="font-bold text-xs text-emerald-900 block">💬 WhatsApp Dispatch</span>
+                  <span className="text-[11px] text-emerald-700">Opens WhatsApp Web/App with full quotation line items &amp; totals.</span>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div
+                onClick={() => setSendMethod('email')}
+                className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${
+                  sendMethod === 'email'
+                    ? 'border-blue-500 bg-blue-50/50 ring-2 ring-blue-500/20'
+                    : 'border-outline-variant hover:bg-surface-container-low'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="dispatch_mode"
+                  checked={sendMethod === 'email'}
+                  onChange={() => setSendMethod('email')}
+                  className="accent-blue-600"
+                />
+                <div className="flex-1">
+                  <span className="font-bold text-xs text-blue-900 block">✉️ Email Dispatch</span>
+                  <span className="text-[11px] text-blue-700">Prepares official corporate email with quotation breakdown.</span>
+                </div>
+              </div>
+
+              {/* Both */}
+              <div
+                onClick={() => setSendMethod('both')}
+                className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${
+                  sendMethod === 'both'
+                    ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
+                    : 'border-outline-variant hover:bg-surface-container-low'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="dispatch_mode"
+                  checked={sendMethod === 'both'}
+                  onChange={() => setSendMethod('both')}
+                  className="accent-primary"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-deep-charcoal">
+                    <span>🚀 Both (Email &amp; WhatsApp)</span>
+                    <span className="text-[9px] bg-primary text-white font-black px-1.5 py-0.2 rounded uppercase">
+                      Recommended
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-secondary">Prepares email and launches WhatsApp dispatch simultaneously.</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowSendModal(false)}
+                className="px-4 py-2 border border-outline-variant hover:bg-surface-container text-deep-charcoal font-semibold text-xs rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSendToCustomer}
+                disabled={saving}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-button font-bold text-xs rounded-lg transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-base">send</span>
+                <span>{saving ? 'Dispatching...' : 'Dispatch & Mark as SENT'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

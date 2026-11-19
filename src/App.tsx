@@ -10,10 +10,12 @@ import LubricantsRequestsPage from './pages/LubricantsRequestsPage';
 import OrdersPage from './pages/OrdersPage';
 import InventoryPage from './pages/InventoryPage';
 import InvoicingPage from './pages/InvoicingPage';
+import ProposalsHistoryPage from './pages/ProposalsHistoryPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { isAuthenticated } from './services/authService';
 import type { InitialQuotationData } from './services/types';
+import type { Invoice } from './services/invoicingService';
 import './index.css';
 
 const searchPlaceholders: Record<TabType, string> = {
@@ -27,6 +29,7 @@ const searchPlaceholders: Record<TabType, string> = {
   leads: 'Search requests...',
   inventory: 'Quick find machinery...',
   invoicing: 'Search quotations, invoices, equipment, or clients...',
+  proposals: 'Search sent proposals by doc no, company, contact, email...',
 };
 
 export default function App() {
@@ -43,6 +46,27 @@ export default function App() {
 
   const handlePrepareQuotation = (data: InitialQuotationData) => {
     setQuotationDraft(data);
+    setActiveTab('invoicing');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleEditInBuilder = (invoice: Invoice) => {
+    setQuotationDraft({
+      companyName: invoice.company,
+      contactPerson: invoice.contact_name,
+      contactNumber: invoice.contact_phone,
+      companyEmail: invoice.email,
+      companyAddress: invoice.billing_address,
+      yourRef: invoice.client_ref || invoice.invoice_number,
+      sourceType: invoice.doc_type === 'quotation' ? 'leasing' : 'spare_parts',
+      products: (invoice.line_items || []).map((li) => ({
+        partNumber: li.part_number,
+        productName: li.description || li.product_name || '',
+        qty: li.qty,
+        unitPrice: li.unit_price,
+      })),
+      notes: invoice.notes,
+    });
     setActiveTab('invoicing');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -98,6 +122,15 @@ export default function App() {
           <InvoicingPage
             initialData={quotationDraft}
             onClearInitialData={() => setQuotationDraft(null)}
+            onNavigate={handleTabChange}
+          />
+        );
+      case 'proposals':
+        return (
+          <ProposalsHistoryPage
+            searchQuery={searchQuery}
+            onNavigate={handleTabChange}
+            onEditInBuilder={handleEditInBuilder}
           />
         );
       default:

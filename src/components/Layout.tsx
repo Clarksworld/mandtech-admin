@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { getStoredUser, logoutAdmin } from '../services/authService';
 import { MandtechLogo } from './Logo';
 
-export type TabType = 'dashboard' | 'orders' | 'compressor-requests' | 'spare-parts-requests' | 'leasing-requests' | 'lubricant-requests' | 'enquiries' | 'leads' | 'inventory' | 'invoicing';
+export type TabType = 'dashboard' | 'orders' | 'compressor-requests' | 'spare-parts-requests' | 'leasing-requests' | 'lubricant-requests' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'proposals';
 
 interface LayoutProps {
   activeTab: TabType;
@@ -50,7 +50,8 @@ export default function Layout({
     { id: 'lubricant-requests', label: 'Lubricants & Fluids', icon: 'water_drop' },
     { id: 'enquiries', label: 'Enquiries', icon: 'contact_support' },
     { id: 'inventory', label: 'Inventory', icon: 'inventory_2' },
-    { id: 'invoicing', label: 'Quotation & Invoicing', icon: 'receipt_long' },
+    { id: 'invoicing', label: 'Quotation Builder', icon: 'edit_document' },
+    { id: 'proposals', label: 'Sent Proposals', icon: 'send_and_archive' },
   ];
 
   return (

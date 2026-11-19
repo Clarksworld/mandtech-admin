@@ -94,3 +94,7 @@ export async function updateInvoiceStatus(id: string, status: string): Promise<{
     body: JSON.stringify({ status }),
   });
 }
+
+export async function fetchInvoiceById(id: string): Promise<{ data: Invoice }> {
+  return apiRequest<{ data: Invoice }>(`/api/admin/invoices/${id}`);
+}
