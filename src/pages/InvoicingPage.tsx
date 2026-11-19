@@ -629,13 +629,22 @@ Our engineering desk is on standby to facilitate mobilization.
           <span>Quotation &amp; Invoice Builder</span>
         </button>
         {onNavigate && (
-          <button
-            onClick={() => onNavigate('proposals')}
-            className="px-3.5 py-1.5 text-secondary hover:text-deep-charcoal font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 hover:bg-white/60"
-          >
-            <span className="material-symbols-outlined text-base text-emerald-600">send_and_archive</span>
-            <span>Sent Proposals &amp; History ({pastInvoices.length})</span>
-          </button>
+          <>
+            <button
+              onClick={() => onNavigate('proposals')}
+              className="px-3.5 py-1.5 text-secondary hover:text-deep-charcoal font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 hover:bg-white/60"
+            >
+              <span className="material-symbols-outlined text-base text-emerald-600">send_and_archive</span>
+              <span>Sent Proposals &amp; History ({pastInvoices.length})</span>
+            </button>
+            <button
+              onClick={() => onNavigate('customer-dms')}
+              className="px-3.5 py-1.5 text-secondary hover:text-deep-charcoal font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 hover:bg-white/60"
+            >
+              <span className="material-symbols-outlined text-base text-primary">folder_shared</span>
+              <span>Customer Folders (DMS)</span>
+            </button>
+          </>
         )}
       </div>
 

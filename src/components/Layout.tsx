@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { getStoredUser, logoutAdmin } from '../services/authService';
 import { MandtechLogo } from './Logo';
 
-export type TabType = 'dashboard' | 'orders' | 'compressor-requests' | 'spare-parts-requests' | 'leasing-requests' | 'lubricant-requests' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'proposals';
+export type TabType = 'dashboard' | 'customer-dms' | 'orders' | 'compressor-requests' | 'spare-parts-requests' | 'leasing-requests' | 'lubricant-requests' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'proposals';
 
 interface LayoutProps {
   activeTab: TabType;
@@ -43,6 +43,7 @@ export default function Layout({
 
   const navItems: { id: TabType; label: string; icon: string }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+    { id: 'customer-dms', label: 'Customer Folders (DMS)', icon: 'folder_shared' },
     { id: 'orders', label: 'Yard Orders & Tracking', icon: 'local_shipping' },
     { id: 'compressor-requests', label: 'Compressor Request', icon: 'air' },
     { id: 'spare-parts-requests', label: 'Spare Parts Requests', icon: 'build' },

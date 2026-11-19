@@ -285,6 +285,15 @@ For technical clarifications or mobilization dispatch:
           </div>
 
           <div className="flex items-center gap-3 w-full lg:w-auto">
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('customer-dms')}
+                className="px-4 py-2.5 bg-white border border-outline-variant hover:bg-surface-container font-button text-xs font-bold text-deep-charcoal rounded-lg transition-all flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <span className="material-symbols-outlined text-base text-primary">folder_shared</span>
+                <span>Customer Folders</span>
+              </button>
+            )}
             <button
               onClick={() => onNavigate && onNavigate('invoicing')}
               className="px-4 py-2.5 bg-primary text-white hover:bg-black font-button text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-sm w-full lg:w-auto"

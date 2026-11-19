@@ -11,6 +11,7 @@ import OrdersPage from './pages/OrdersPage';
 import InventoryPage from './pages/InventoryPage';
 import InvoicingPage from './pages/InvoicingPage';
 import ProposalsHistoryPage from './pages/ProposalsHistoryPage';
+import CustomerDMSPage from './pages/CustomerDMSPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { isAuthenticated } from './services/authService';
@@ -20,6 +21,7 @@ import './index.css';
 
 const searchPlaceholders: Record<TabType, string> = {
   dashboard: 'Search industrial portal...',
+  'customer-dms': 'Search customer folders by company, contact, location…',
   orders: 'Search orders by order ID, company, email, hub...',
   'compressor-requests': 'Search compressor requests by company, brand, email…',
   'spare-parts-requests': 'Search spare parts requests by company, brand, part name, email…',
@@ -101,6 +103,8 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardPage onNavigate={handleTabChange} />;
+      case 'customer-dms':
+        return <CustomerDMSPage onNavigate={handleTabChange} onPrepareQuotation={handlePrepareQuotation} />;
       case 'orders':
         return <OrdersPage onNavigate={handleTabChange} onPrepareQuotation={handlePrepareQuotation} />;
       case 'compressor-requests':
