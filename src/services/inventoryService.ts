@@ -66,3 +66,25 @@ export async function createPart(part: Partial<Part>): Promise<Part> {
     body: JSON.stringify(part),
   });
 }
+
+export async function updateProduct(id: string, product: Partial<Product>): Promise<Product> {
+  return apiRequest<Product>(`/api/admin/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(product),
+  });
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  return apiRequest<void>(`/api/admin/products/${id}`, { method: 'DELETE' });
+}
+
+export async function updatePart(id: string, part: Partial<Part>): Promise<Part> {
+  return apiRequest<Part>(`/api/admin/parts/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(part),
+  });
+}
+
+export async function deletePart(id: string): Promise<void> {
+  return apiRequest<void>(`/api/admin/parts/${id}`, { method: 'DELETE' });
+}
