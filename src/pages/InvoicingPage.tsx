@@ -7,7 +7,7 @@ import {
   LineItem as ServiceLineItem,
 } from '../services/invoicingService';
 import { MandtechLogo } from '../components/Logo';
-import { BrandLogosFooter } from '../components/BrandLogosFooter';
+import { BrandLogosFooter, DEFAULT_PARTNERS, type PartnerBrand } from '../components/BrandLogosFooter';
 import { numberToWordsNaira } from '../utils/numberToWords';
 import type { InitialQuotationData } from '../services/types';
 import type { TabType } from '../components/Layout';
@@ -52,6 +52,7 @@ export const DEFAULT_COMPANY_PROFILE: CompanyInvoiceProfile = {
 };
 
 const COMPANY_PROFILE_STORAGE_KEY = 'mandtech_invoice_company_profile';
+const PARTNERS_STORAGE_KEY = 'mandtech_invoice_partners';
 
 const LEASING_TERMS = [
   'Customer is hereby referred to as the Customer and the MANDTECH SERVICES LTD shall be called the Contractor.',
@@ -148,6 +149,90 @@ export default function InvoicingPage({ initialData, onClearInitialData, onNavig
         localStorage.removeItem(COMPANY_PROFILE_STORAGE_KEY);
       } catch {}
     }
+  };
+
+  // Partner Brands in Footer
+  const [partners, setPartners] = useState<PartnerBrand[]>(() => {
+    try {
+      const saved = localStorage.getItem(PARTNERS_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Failed to load partners from storage', e);
+    }
+    return DEFAULT_PARTNERS;
+  });
+
+  const [showPartnerSettings, setShowPartnerSettings] = useState(false);
+  const [showAddPartnerModal, setShowAddPartnerModal] = useState(false);
+  const [newPartnerName, setNewPartnerName] = useState('');
+  const [newPartnerType, setNewPartnerType] = useState<'styled-text' | 'image' | 'badge'>('styled-text');
+  const [newPartnerTextColor, setNewPartnerTextColor] = useState('#D92D20');
+  const [newPartnerLogoUrl, setNewPartnerLogoUrl] = useState('');
+
+  const savePartners = (updatedList: PartnerBrand[]) => {
+    setPartners(updatedList);
+    try {
+      localStorage.setItem(PARTNERS_STORAGE_KEY, JSON.stringify(updatedList));
+    } catch (e) {
+      console.warn('Failed to persist partners', e);
+    }
+  };
+
+  const togglePartner = (id: string) => {
+    savePartners(
+      partners.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p))
+    );
+  };
+
+  const removePartner = (id: string) => {
+    savePartners(partners.filter((p) => p.id !== id));
+  };
+
+  const resetPartners = () => {
+    if (window.confirm('Reset all partner brand logos back to standard defaults?')) {
+      setPartners(DEFAULT_PARTNERS);
+      try {
+        localStorage.removeItem(PARTNERS_STORAGE_KEY);
+      } catch {}
+    }
+  };
+
+  const handleAddCustomPartner = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPartnerName.trim()) return;
+
+    const newPartner: PartnerBrand = {
+      id: `partner-${Date.now()}`,
+      name: newPartnerName.trim(),
+      enabled: true,
+      type: newPartnerType,
+      logoUrl: newPartnerLogoUrl || undefined,
+      textColor: newPartnerTextColor,
+      customStyle: newPartnerType === 'styled-text' ? 'font-black text-xs tracking-tight' : undefined,
+    };
+
+    savePartners([...partners, newPartner]);
+    setNewPartnerName('');
+    setNewPartnerLogoUrl('');
+    setShowAddPartnerModal(false);
+  };
+
+  const handlePartnerImageUpload = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Logo size must be less than 2MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        savePartners(
+          partners.map((p) => (p.id === id ? { ...p, logoUrl: reader.result as string, type: 'image' } : p))
+        );
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Template Mode & Document Title
@@ -1050,6 +1135,134 @@ Our engineering desk is on standby to facilitate mobilization.
             )}
           </div>
 
+          {/* Card 0.5: Authorized Partners & Brand Logos Strip */}
+          <div className="bg-surface-white border border-outline-variant p-5 rounded-xl shadow-sm relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-blue-600 rounded-t-xl" />
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <h3 className="text-xs font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-base text-blue-600">handshake</span>
+                  Partner Brands (Footer Strip)
+                </h3>
+                <span className="text-[10px] text-secondary font-medium">
+                  {partners.filter((p) => p.enabled).length} of {partners.length} active on document
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddPartnerModal(true)}
+                  className="px-2.5 py-1 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded text-[11px] font-bold transition-colors flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-xs">add</span>
+                  <span>Add Partner</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPartnerSettings(!showPartnerSettings)}
+                  className="text-[11px] font-bold text-secondary hover:text-deep-charcoal flex items-center gap-1 px-2 py-0.5 rounded hover:bg-surface-container transition-colors"
+                >
+                  <span>{showPartnerSettings ? 'Minimize' : 'Manage'}</span>
+                  <span className="material-symbols-outlined text-sm">
+                    {showPartnerSettings ? 'expand_less' : 'expand_more'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {showPartnerSettings && (
+              <div className="space-y-2.5 text-xs pt-2 border-t border-outline-variant">
+                <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
+                  {partners.map((p) => (
+                    <div
+                      key={p.id}
+                      className={`flex items-center justify-between p-2 rounded-lg border transition-all ${
+                        p.enabled
+                          ? 'bg-surface-white border-outline-variant'
+                          : 'bg-surface-container/60 border-dashed border-outline-variant opacity-60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {/* Toggle Checkbox */}
+                        <input
+                          type="checkbox"
+                          checked={p.enabled}
+                          onChange={() => togglePartner(p.id)}
+                          className="h-4 w-4 accent-primary rounded cursor-pointer shrink-0"
+                          title={p.enabled ? 'Click to hide from invoice' : 'Click to show on invoice'}
+                        />
+
+                        {/* Visual preview */}
+                        <div className="h-7 w-20 px-1 bg-white rounded border border-outline-variant flex items-center justify-center shrink-0 overflow-hidden">
+                          {p.type === 'image' && p.logoUrl ? (
+                            <img src={p.logoUrl} alt={p.name} className="h-5 w-auto object-contain max-w-full" />
+                          ) : p.type === 'badge' ? (
+                            <span className="bg-black text-white text-[8px] font-bold px-1 py-0.5 rounded leading-none">
+                              {p.name}
+                            </span>
+                          ) : (
+                            <span
+                              style={{ color: p.textColor || '#000000' }}
+                              className={`text-[10px] truncate ${p.customStyle || 'font-black'}`}
+                            >
+                              {p.name}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Name */}
+                        <span className="font-bold text-gray-800 text-xs truncate max-w-[120px]">
+                          {p.name}
+                        </span>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {/* Image Uploader */}
+                        <label
+                          className="p-1 text-secondary hover:text-blue-600 hover:bg-blue-50 rounded cursor-pointer transition-colors"
+                          title="Upload / Change Logo Image"
+                        >
+                          <span className="material-symbols-outlined text-sm block">image</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handlePartnerImageUpload(p.id, e)}
+                            className="hidden"
+                          />
+                        </label>
+
+                        {/* Remove / Delete */}
+                        <button
+                          type="button"
+                          onClick={() => removePartner(p.id)}
+                          className="p-1 text-secondary hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                          title="Remove Partner from invoice"
+                        >
+                          <span className="material-symbols-outlined text-sm block">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-2 flex justify-between items-center text-[11px] text-secondary border-t border-outline-variant">
+                  <span className="flex items-center gap-1 text-blue-700 font-semibold">
+                    <span className="material-symbols-outlined text-xs">sync</span>
+                    Appears in invoice &amp; quote footer strip
+                  </span>
+                  <button
+                    type="button"
+                    onClick={resetPartners}
+                    className="text-rose-600 hover:underline font-bold"
+                  >
+                    Reset Default Brands
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Card 1: Client / Customer Card */}
           <div className="bg-surface-white border border-outline-variant p-5 rounded-xl shadow-sm relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-primary rounded-t-xl" />
@@ -1799,7 +2012,10 @@ Our engineering desk is on standby to facilitate mobilization.
             )}
 
             {/* Bottom Authorized Brand Logos Strip */}
-            <BrandLogosFooter />
+            <BrandLogosFooter
+              partners={partners}
+              onOpenPartnerSettings={() => setShowPartnerSettings(true)}
+            />
           </div>
         </section>
       </div>
@@ -2032,6 +2248,171 @@ Our engineering desk is on standby to facilitate mobilization.
                 <span>{saving ? 'Dispatching...' : 'Dispatch & Mark as SENT'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Partner Modal */}
+      {showAddPartnerModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in no-print"
+          onClick={() => setShowAddPartnerModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-outline-variant"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4 pb-3 border-b border-outline-variant">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-blue-600 text-2xl">
+                  add_business
+                </span>
+                <h3 className="text-base font-black text-deep-charcoal">
+                  Add Brand Partner to Letterhead
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowAddPartnerModal(false)}
+                className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCustomPartner} className="space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">PARTNER BRAND NAME *</label>
+                <input
+                  type="text"
+                  required
+                  value={newPartnerName}
+                  onChange={(e) => setNewPartnerName(e.target.value)}
+                  placeholder="e.g. SOLLANT, COMPAIR, ELGi"
+                  className="w-full bg-surface border border-outline-variant p-2 rounded text-xs focus:border-primary outline-none font-bold text-gray-900 uppercase"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">DISPLAY STYLE</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewPartnerType('styled-text')}
+                    className={`p-2 border rounded-lg text-center font-bold text-[11px] transition-all ${
+                      newPartnerType === 'styled-text'
+                        ? 'border-blue-600 bg-blue-50 text-blue-800 ring-2 ring-blue-500/20'
+                        : 'border-outline-variant text-secondary hover:bg-surface'
+                    }`}
+                  >
+                    Styled Text
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewPartnerType('image')}
+                    className={`p-2 border rounded-lg text-center font-bold text-[11px] transition-all ${
+                      newPartnerType === 'image'
+                        ? 'border-blue-600 bg-blue-50 text-blue-800 ring-2 ring-blue-500/20'
+                        : 'border-outline-variant text-secondary hover:bg-surface'
+                    }`}
+                  >
+                    Logo Image
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewPartnerType('badge')}
+                    className={`p-2 border rounded-lg text-center font-bold text-[11px] transition-all ${
+                      newPartnerType === 'badge'
+                        ? 'border-blue-600 bg-blue-50 text-blue-800 ring-2 ring-blue-500/20'
+                        : 'border-outline-variant text-secondary hover:bg-surface'
+                    }`}
+                  >
+                    Black Badge
+                  </button>
+                </div>
+              </div>
+
+              {newPartnerType === 'styled-text' && (
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">BRAND COLOR</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={newPartnerTextColor}
+                      onChange={(e) => setNewPartnerTextColor(e.target.value)}
+                      className="h-9 w-12 rounded cursor-pointer border border-outline-variant"
+                    />
+                    <input
+                      type="text"
+                      value={newPartnerTextColor}
+                      onChange={(e) => setNewPartnerTextColor(e.target.value)}
+                      placeholder="#D92D20"
+                      className="flex-1 bg-surface border border-outline-variant p-2 rounded text-xs font-mono uppercase"
+                    />
+                  </div>
+                  <div className="mt-2 p-2 bg-surface-container rounded border border-outline-variant flex items-center justify-center">
+                    <span style={{ color: newPartnerTextColor }} className="font-black text-xs italic tracking-tight">
+                      {newPartnerName || 'Brand Preview'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {newPartnerType === 'image' && (
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">LOGO IMAGE FILE OR URL</label>
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            if (typeof reader.result === 'string') {
+                              setNewPartnerLogoUrl(reader.result);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="w-full text-xs text-secondary file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-secondary text-[11px]">or image URL:</span>
+                      <input
+                        type="text"
+                        value={newPartnerLogoUrl}
+                        onChange={(e) => setNewPartnerLogoUrl(e.target.value)}
+                        placeholder="https://..."
+                        className="flex-1 bg-surface border border-outline-variant p-1.5 rounded text-xs"
+                      />
+                    </div>
+                  </div>
+                  {newPartnerLogoUrl && (
+                    <div className="mt-2 p-2 bg-surface-container rounded border border-outline-variant flex items-center justify-center h-12">
+                      <img src={newPartnerLogoUrl} alt="Preview" className="h-8 max-w-full object-contain" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-outline-variant flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowAddPartnerModal(false)}
+                  className="px-4 py-2 border border-outline-variant hover:bg-surface-container text-deep-charcoal font-semibold rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all shadow-sm"
+                >
+                  Add Partner
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
