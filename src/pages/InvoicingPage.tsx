@@ -30,10 +30,28 @@ const DEFAULT_BANK_DETAILS = `Mandtech Services Limited
 Sterling Bank Plc - 01433839162`;
 
 const DEFAULT_TAX_ID = '33865000001';
-const DEFAULT_RC = 'RC - 9324886';
-const DEFAULT_PHONE = '08186538644';
-const DEFAULT_EMAIL = 'mandtechserviceslimited@gmail.com';
-const DEFAULT_ADDRESS = '54 Old Refinery road, Elelenwo, Port-Harcourt';
+
+export interface CompanyInvoiceProfile {
+  logoUrl: string;
+  rcNumber: string;
+  distributorTagline: string;
+  companyName: string;
+  companyAddress: string;
+  companyEmail: string;
+  salesPhone: string;
+}
+
+export const DEFAULT_COMPANY_PROFILE: CompanyInvoiceProfile = {
+  logoUrl: '',
+  rcNumber: 'RC - 9324886',
+  distributorTagline: 'DISTRIBUTORS OF DENAIR AIR COMPRESSORS IN NIGERIA',
+  companyName: 'MANDTECH SERVICES LIMITED',
+  companyAddress: '54 Old Refinery road, Elelenwo, Port-Harcourt',
+  companyEmail: 'mandtechserviceslimited@gmail.com',
+  salesPhone: '08186538644',
+};
+
+const COMPANY_PROFILE_STORAGE_KEY = 'mandtech_invoice_company_profile';
 
 const LEASING_TERMS = [
   'Customer is hereby referred to as the Customer and the MANDTECH SERVICES LTD shall be called the Contractor.',
@@ -76,6 +94,62 @@ interface InvoicingPageProps {
 }
 
 export default function InvoicingPage({ initialData, onClearInitialData, onNavigate }: InvoicingPageProps = {}) {
+  // Company Letterhead & Branding Profile (persisted across sessions)
+  const [companyProfile, setCompanyProfile] = useState<CompanyInvoiceProfile>(() => {
+    try {
+      const saved = localStorage.getItem(COMPANY_PROFILE_STORAGE_KEY);
+      if (saved) {
+        return { ...DEFAULT_COMPANY_PROFILE, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      console.warn('Failed to load company profile from storage', e);
+    }
+    return DEFAULT_COMPANY_PROFILE;
+  });
+
+  const [showCompanySettings, setShowCompanySettings] = useState(false);
+
+  const updateCompanyProfile = (field: keyof CompanyInvoiceProfile, value: string) => {
+    setCompanyProfile((prev) => {
+      const updated = { ...prev, [field]: value };
+      try {
+        localStorage.setItem(COMPANY_PROFILE_STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to persist company profile', e);
+      }
+      return updated;
+    });
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Logo file size must be less than 2MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        updateCompanyProfile('logoUrl', reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetLogo = () => {
+    updateCompanyProfile('logoUrl', '');
+  };
+
+  const handleResetCompanyProfile = () => {
+    if (window.confirm('Reset all company header details and logo back to defaults?')) {
+      setCompanyProfile(DEFAULT_COMPANY_PROFILE);
+      try {
+        localStorage.removeItem(COMPANY_PROFILE_STORAGE_KEY);
+      } catch {}
+    }
+  };
+
   // Template Mode & Document Title
   const [templateMode, setTemplateMode] = useState<TemplateMode>('parts');
   const [docHeading, setDocHeading] = useState<'INVOICE' | 'QUOTATION'>('INVOICE');
@@ -443,7 +517,7 @@ export default function InvoicingPage({ initialData, onClearInitialData, onNavig
         contact_phone: contactPhone.trim(),
         email: contactEmail.trim(),
         billing_address: `${deliveryAddress}, ${city}, ${state}`.trim(),
-        sales_person: 'Mandtech Sales/Service (08186538644)',
+        sales_person: `${companyProfile.companyName} Sales/Service (${companyProfile.salesPhone})`,
         client_ref: yourRef.trim(),
         bank_details: bankDetails.trim(),
         amount_in_words: effectiveWords,
@@ -501,7 +575,7 @@ export default function InvoicingPage({ initialData, onClearInitialData, onNavig
         contact_phone: contactPhone.trim(),
         email: contactEmail.trim(),
         billing_address: `${deliveryAddress}, ${city}, ${state}`.trim(),
-        sales_person: 'Mandtech Sales/Service (08186538644)',
+        sales_person: `${companyProfile.companyName} Sales/Service (${companyProfile.salesPhone})`,
         client_ref: yourRef.trim(),
         bank_details: bankDetails.trim(),
         amount_in_words: effectiveWords,
@@ -523,7 +597,7 @@ export default function InvoicingPage({ initialData, onClearInitialData, onNavig
         )
         .join('\n');
 
-      const whatsappText = `*MANDTECH SERVICES LIMITED - OFFICIAL QUOTATION*
+      const whatsappText = `*${companyProfile.companyName} - OFFICIAL QUOTATION*
 ━━━━━━━━━━━━━━━━━━━━━━━━
 📄 *Quotation Ref:* ${documentNo}
 📅 *Date:* ${docDate}
@@ -543,10 +617,10 @@ ${linesSummary}
 🗣️ *In Words:* ${effectiveWords}
 ━━━━━━━━━━━━━━━━━━━━━━━━
 *Terms:* 100% Down Payment & Issue of LPO (or Rental upfront).
-*Bank:* Sterling Bank Plc | 01433839162 (Mandtech Services Ltd)
+*Bank:* Sterling Bank Plc | 01433839162 (${companyProfile.companyName})
 
 Our engineering desk is on standby to facilitate mobilization.
-📞 Hotline: 08186538644 | info@mandtech.com.ng`;
+📞 Hotline: ${companyProfile.salesPhone} | ${companyProfile.companyEmail}`;
 
       const cleanPhone = (contactPhone || '').replace(/[^0-9]/g, '');
       const intlPhone = cleanPhone.startsWith('0')
@@ -562,12 +636,12 @@ Our engineering desk is on standby to facilitate mobilization.
 
       if (sendMethod === 'email' || sendMethod === 'both') {
         const emailSubject = encodeURIComponent(
-          `Commercial Quotation ${documentNo} - Mandtech Services Limited - ${companyName}`
+          `Commercial Quotation ${documentNo} - ${companyProfile.companyName} - ${companyName}`
         );
         const emailBody = encodeURIComponent(
           `Dear ${attentionName},\n\nPlease find below our official commercial quotation ${documentNo} for ${companyName}.\n\nTotal Payable: NGN ${fmtNumber(
             total
-          )}\nIn Words: ${effectiveWords}\n\n${whatsappText.replace(/\*/g, '')}\n\nWarm regards,\nMandtech Commercial Sales & Operations`
+          )}\nIn Words: ${effectiveWords}\n\n${whatsappText.replace(/\*/g, '')}\n\nWarm regards,\n${companyProfile.companyName} Commercial Sales & Operations`
         );
         const mailtoUrl = `mailto:${contactEmail}?subject=${emailSubject}&body=${emailBody}`;
         if (sendMethod === 'both') {
@@ -826,6 +900,156 @@ Our engineering desk is on standby to facilitate mobilization.
       <div className="grid grid-cols-12 gap-8 mb-12">
         {/* ================= LEFT: CONTROLS & FORM BUILDER ================= */}
         <section className="col-span-12 lg:col-span-5 space-y-5 no-print">
+          {/* Card 0: Company Header & Letterhead Branding */}
+          <div className="bg-surface-white border border-outline-variant p-5 rounded-xl shadow-sm relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-emerald-600 rounded-t-xl" />
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base text-emerald-600">corporate_fare</span>
+                Company Letterhead &amp; Header Info
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowCompanySettings(!showCompanySettings)}
+                className="text-[11px] font-bold text-secondary hover:text-deep-charcoal flex items-center gap-1 px-2 py-0.5 rounded hover:bg-surface-container transition-colors"
+              >
+                <span>{showCompanySettings ? 'Minimize' : 'Edit Header'}</span>
+                <span className="material-symbols-outlined text-sm">
+                  {showCompanySettings ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+            </div>
+
+            {showCompanySettings && (
+              <div className="space-y-3 text-xs pt-1 border-t border-outline-variant">
+                {/* Logo Editor */}
+                <div>
+                  <label className="font-bold text-gray-700 block mb-1">INVOICE &amp; QUOTE LOGO</label>
+                  <div className="flex items-center gap-3 p-2 bg-surface-container rounded-lg border border-outline-variant">
+                    <div className="h-10 px-2 bg-white rounded border border-outline-variant flex items-center justify-center overflow-hidden max-w-[150px]">
+                      {companyProfile.logoUrl ? (
+                        <img
+                          src={companyProfile.logoUrl}
+                          alt="Custom Logo"
+                          className="h-full w-auto object-contain"
+                        />
+                      ) : (
+                        <MandtechLogo height={28} variant="light" />
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="px-3 py-1.5 bg-deep-charcoal hover:bg-black text-white rounded text-[11px] font-bold cursor-pointer transition-colors shadow-2xs flex items-center gap-1">
+                        <span className="material-symbols-outlined text-sm">upload</span>
+                        <span>Upload Logo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          className="hidden"
+                        />
+                      </label>
+                      {companyProfile.logoUrl && (
+                        <button
+                          type="button"
+                          onClick={handleResetLogo}
+                          className="px-2.5 py-1.5 border border-outline-variant hover:bg-surface rounded text-[11px] text-secondary font-bold transition-colors"
+                        >
+                          Reset Default
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Company Name */}
+                <div>
+                  <label className="font-bold text-gray-700 block mb-0.5">COMPANY NAME *</label>
+                  <input
+                    type="text"
+                    value={companyProfile.companyName}
+                    onChange={(e) => updateCompanyProfile('companyName', e.target.value)}
+                    placeholder="e.g. MANDTECH SERVICES LIMITED"
+                    className="w-full bg-surface border border-outline-variant p-2 rounded text-xs focus:border-primary outline-none font-black text-gray-900 uppercase"
+                  />
+                </div>
+
+                {/* RC & Tagline */}
+                <div className="grid grid-cols-12 gap-3">
+                  <div className="col-span-5">
+                    <label className="font-bold text-gray-700 block mb-0.5">RC NUMBER</label>
+                    <input
+                      type="text"
+                      value={companyProfile.rcNumber}
+                      onChange={(e) => updateCompanyProfile('rcNumber', e.target.value)}
+                      placeholder="e.g. RC - 9324886"
+                      className="w-full bg-surface border border-outline-variant p-2 rounded text-xs focus:border-primary outline-none font-bold"
+                    />
+                  </div>
+                  <div className="col-span-7">
+                    <label className="font-bold text-gray-700 block mb-0.5">DISTRIBUTOR TAGLINE</label>
+                    <input
+                      type="text"
+                      value={companyProfile.distributorTagline}
+                      onChange={(e) => updateCompanyProfile('distributorTagline', e.target.value)}
+                      placeholder="e.g. DISTRIBUTORS OF DENAIR AIR COMPRESSORS IN NIGERIA"
+                      className="w-full bg-surface border border-outline-variant p-2 rounded text-xs focus:border-primary outline-none font-bold text-primary"
+                    />
+                  </div>
+                </div>
+
+                {/* Company Address */}
+                <div>
+                  <label className="font-bold text-gray-700 block mb-0.5">COMPANY / YARD ADDRESS *</label>
+                  <input
+                    type="text"
+                    value={companyProfile.companyAddress}
+                    onChange={(e) => updateCompanyProfile('companyAddress', e.target.value)}
+                    placeholder="e.g. 54 Old Refinery road, Elelenwo, Port-Harcourt"
+                    className="w-full bg-surface border border-outline-variant p-2 rounded text-xs focus:border-primary outline-none font-medium"
+                  />
+                </div>
+
+                {/* Email & Phone */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-bold text-gray-700 block mb-0.5">COMPANY EMAIL *</label>
+                    <input
+                      type="email"
+                      value={companyProfile.companyEmail}
+                      onChange={(e) => updateCompanyProfile('companyEmail', e.target.value)}
+                      placeholder="e.g. mandtechserviceslimited@gmail.com"
+                      className="w-full bg-surface border border-outline-variant p-2 rounded text-xs focus:border-primary outline-none font-mono text-primary font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-bold text-gray-700 block mb-0.5">SALES / SERVICE PHONE *</label>
+                    <input
+                      type="text"
+                      value={companyProfile.salesPhone}
+                      onChange={(e) => updateCompanyProfile('salesPhone', e.target.value)}
+                      placeholder="e.g. 08186538644"
+                      className="w-full bg-surface border border-outline-variant p-2 rounded text-xs focus:border-primary outline-none font-mono font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-between items-center text-[11px] text-secondary">
+                  <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                    <span className="material-symbols-outlined text-xs">sync</span>
+                    Auto-saved across all invoices &amp; quotes
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleResetCompanyProfile}
+                    className="text-rose-600 hover:underline font-bold"
+                  >
+                    Reset Defaults
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Card 1: Client / Customer Card */}
           <div className="bg-surface-white border border-outline-variant p-5 rounded-xl shadow-sm relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-primary rounded-t-xl" />
@@ -1237,23 +1461,49 @@ Our engineering desk is on standby to facilitate mobilization.
             style={{ minHeight: '1060px', color: '#000000', fontSize: '11px', lineHeight: 1.35 }}
           >
             {/* Header: Logo & Mandtech Contact Info */}
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <MandtechLogo height={34} variant="light" />
-                <div className="mt-2 flex items-center gap-3 text-[10px] font-black tracking-wide">
-                  <span>{DEFAULT_RC}</span>
+            <div className="flex justify-between items-start mb-2 group relative">
+              <div className="max-w-[55%]">
+                {companyProfile.logoUrl ? (
+                  <img
+                    src={companyProfile.logoUrl}
+                    alt={companyProfile.companyName}
+                    className="h-10 w-auto object-contain max-w-[280px]"
+                  />
+                ) : (
+                  <MandtechLogo height={38} variant="light" />
+                )}
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-black tracking-wide">
+                  <span>{companyProfile.rcNumber}</span>
                   <span className="text-[#336699] font-bold italic">
-                    DISTRIBUTORS OF <strong className="text-[#00A859] font-black not-italic">DENAIR</strong> AIR COMPRESSORS IN NIGERIA
+                    {companyProfile.distributorTagline.includes('DENAIR') ? (
+                      <>
+                        {companyProfile.distributorTagline.split('DENAIR')[0]}
+                        <strong className="text-[#00A859] font-black not-italic">DENAIR</strong>
+                        {companyProfile.distributorTagline.split('DENAIR')[1]}
+                      </>
+                    ) : (
+                      companyProfile.distributorTagline
+                    )}
                   </span>
                 </div>
               </div>
 
-              <div className="text-right text-[10px] leading-tight">
-                <p className="font-black text-xs uppercase tracking-tight">MANDTECH SERVICES LIMITED</p>
-                <p className="mt-0.5">{DEFAULT_ADDRESS}</p>
-                <p className="font-mono">{DEFAULT_EMAIL}</p>
-                <p className="font-bold">Sales/Service: {DEFAULT_PHONE}</p>
+              <div className="text-right text-[10px] leading-tight max-w-[45%]">
+                <p className="font-black text-xs uppercase tracking-tight">{companyProfile.companyName}</p>
+                <p className="mt-0.5">{companyProfile.companyAddress}</p>
+                <p className="font-mono">{companyProfile.companyEmail}</p>
+                <p className="font-bold">Sales/Service: {companyProfile.salesPhone}</p>
               </div>
+
+              {/* Quick edit indicator for admin */}
+              <button
+                type="button"
+                onClick={() => setShowCompanySettings(true)}
+                className="absolute -top-1 -right-1 bg-emerald-600 hover:bg-black text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity no-print shadow-md flex items-center justify-center"
+                title="Edit Company Header Details"
+              >
+                <span className="material-symbols-outlined text-xs block">edit</span>
+              </button>
             </div>
 
             {/* Document Title Banner for Leasing Mode */}
