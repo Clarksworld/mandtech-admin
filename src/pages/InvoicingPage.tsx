@@ -3,6 +3,7 @@ import {
   createInvoice,
   fetchInvoices,
   updateInvoiceStatus,
+  sendInvoiceEmail,
   Invoice,
   LineItem as ServiceLineItem,
 } from '../services/invoicingService';
@@ -714,33 +715,36 @@ Our engineering desk is on standby to facilitate mobilization.
         ? cleanPhone
         : cleanPhone;
 
+      // PDF URL for this invoice (served from backend)
+      const API_BASE = 'https://mandtech-backend-1chv.vercel.app';
+      const pdfUrl = `${API_BASE}/api/admin/invoices/${res.data.id}/pdf`;
+
+      // Enrich WhatsApp message with PDF download link
+      const whatsappTextWithPdf = `${whatsappText}\n\n📄 *Download Official PDF Quotation:*\n${pdfUrl}`;
+
       if (sendMethod === 'whatsapp' || sendMethod === 'both') {
-        const waUrl = `https://wa.me/${intlPhone}?text=${encodeURIComponent(whatsappText)}`;
+        const waUrl = `https://wa.me/${intlPhone}?text=${encodeURIComponent(whatsappTextWithPdf)}`;
         window.open(waUrl, '_blank');
       }
 
       if (sendMethod === 'email' || sendMethod === 'both') {
-        const emailSubject = encodeURIComponent(
-          `Commercial Quotation ${documentNo} - ${companyProfile.companyName} - ${companyName}`
-        );
-        const emailBody = encodeURIComponent(
-          `Dear ${attentionName},\n\nPlease find below our official commercial quotation ${documentNo} for ${companyName}.\n\nTotal Payable: NGN ${fmtNumber(
-            total
-          )}\nIn Words: ${effectiveWords}\n\n${whatsappText.replace(/\*/g, '')}\n\nWarm regards,\n${companyProfile.companyName} Commercial Sales & Operations`
-        );
-        const mailtoUrl = `mailto:${contactEmail}?subject=${emailSubject}&body=${emailBody}`;
-        if (sendMethod === 'both') {
-          setTimeout(() => {
-            window.location.href = mailtoUrl;
-          }, 600);
-        } else {
-          window.location.href = mailtoUrl;
+        // Background email dispatch via backend — sends PDF attachment automatically
+        try {
+          await sendInvoiceEmail(res.data.id);
+          setSaveSuccessMsg(
+            `✅ Email dispatched to ${contactEmail} with PDF attached! (Ref: ${res.data.invoice_number})`
+          );
+        } catch (emailErr: any) {
+          // Non-fatal: document was saved, just warn about email
+          setSaveErrorMsg(`Document saved but email dispatch failed: ${emailErr.message || 'Unknown error'}`);
         }
       }
 
-      setSaveSuccessMsg(
-        `Quotation ${res.data.invoice_number} saved as SENT and dispatched via ${sendMethod.toUpperCase()}!`
-      );
+      if (!saveErrorMsg) {
+        setSaveSuccessMsg(
+          `Quotation ${res.data.invoice_number} saved as SENT and dispatched via ${sendMethod.toUpperCase()}!`
+        );
+      }
       setShowSendModal(false);
       loadPastInvoices();
     } catch (err: any) {

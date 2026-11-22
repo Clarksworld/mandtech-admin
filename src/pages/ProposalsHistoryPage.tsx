@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   fetchInvoices,
   updateInvoiceStatus,
+  sendInvoiceEmail,
   Invoice,
 } from '../services/invoicingService';
 import type { TabType } from '../components/Layout';
@@ -189,39 +190,35 @@ For technical clarifications or mobilization dispatch:
       ? cleanPhone
       : cleanPhone;
 
+    const API_BASE = 'https://mandtech-backend-1chv.vercel.app';
+    const pdfUrl = `${API_BASE}/api/admin/invoices/${inv.id}/pdf`;
     const whatsappText = formatWhatsAppText(inv);
+    const whatsappTextWithPdf = `${whatsappText}\n\n📄 *Download Official PDF Quotation:*\n${pdfUrl}`;
 
     // 2. Trigger WhatsApp if selected
     if (sendMethod === 'whatsapp' || sendMethod === 'both') {
-      const waUrl = `https://wa.me/${intlPhone}?text=${encodeURIComponent(whatsappText)}`;
+      const waUrl = `https://wa.me/${intlPhone}?text=${encodeURIComponent(whatsappTextWithPdf)}`;
       window.open(waUrl, '_blank');
     }
 
-    // 3. Trigger Email if selected
+    // 3. Background email dispatch via backend (PDF attached automatically)
     if (sendMethod === 'email' || sendMethod === 'both') {
-      const emailSubject = encodeURIComponent(
-        `Commercial Quotation ${inv.invoice_number} - Mandtech Services Limited - ${inv.company}`
-      );
-      const emailBody = encodeURIComponent(
-        `Dear ${inv.contact_name},\n\nPlease find our formal commercial quotation ${inv.invoice_number} for ${inv.company}.\n\nTotal Amount Payable: NGN ${fmt(
-          inv.total
-        )}\nIn Words: ${inv.amount_in_words || ''}\n\n${whatsappText.replace(/\*/g, '')}\n\nWarm regards,\nMandtech Services Limited Commercial Sales Desk`
-      );
-      const mailtoUrl = `mailto:${inv.email}?subject=${emailSubject}&body=${emailBody}`;
-      
-      // Delay slightly if both are opened
-      if (sendMethod === 'both') {
-        setTimeout(() => {
-          window.location.href = mailtoUrl;
-        }, 600);
-      } else {
-        window.location.href = mailtoUrl;
+      try {
+        await sendInvoiceEmail(inv.id);
+        setSendSuccessMsg(
+          `✅ Email dispatched to ${inv.email} with PDF attached! (Ref: ${inv.invoice_number})`
+        );
+      } catch (emailErr: any) {
+        setSendSuccessMsg(
+          `Document marked SENT. Email dispatch failed: ${emailErr.message || 'Unknown'}. Check backend logs.`
+        );
       }
+    } else {
+      setSendSuccessMsg(
+        `Quotation ${inv.invoice_number} dispatched via ${sendMethod.toUpperCase()} and marked as SENT!`
+      );
     }
 
-    setSendSuccessMsg(
-      `Quotation ${inv.invoice_number} dispatched via ${sendMethod.toUpperCase()} and marked as SENT!`
-    );
     setShowSendModal(false);
     setTimeout(() => setSendSuccessMsg(null), 5000);
   };

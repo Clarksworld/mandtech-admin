@@ -98,3 +98,15 @@ export async function updateInvoiceStatus(id: string, status: string): Promise<{
 export async function fetchInvoiceById(id: string): Promise<{ data: Invoice }> {
   return apiRequest<{ data: Invoice }>(`/api/admin/invoices/${id}`);
 }
+
+export async function sendInvoiceEmail(id: string): Promise<{
+  success: boolean;
+  message: string;
+  pdf_url: string;
+  data: Invoice;
+}> {
+  return apiRequest<{ success: boolean; message: string; pdf_url: string; data: Invoice }>(
+    `/api/admin/invoices/${id}/send-email`,
+    { method: 'POST' }
+  );
+}
