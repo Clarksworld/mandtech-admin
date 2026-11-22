@@ -99,20 +99,22 @@ export default function SparePartsRequestsPage({ onNavigate: _onNavigate, onPrep
 
   const handleStartQuote = (req: SparePartsRequest) => {
     if (onPrepareQuotation) {
+      const parts = req.part_name && req.part_name.includes(',')
+        ? req.part_name.split(',').map((p) => p.trim()).filter(Boolean)
+        : [req.part_name];
+
       onPrepareQuotation({
         companyName: req.company_name,
         contactPerson: req.company_name,
         contactNumber: req.phone,
         companyEmail: req.email,
         yourRef: `SPR-${req.id.slice(0, 8).toUpperCase()}`,
-        products: [
-          {
-            partNumber: `${req.brand.slice(0, 3).toUpperCase()}-GENUINE`,
-            productName: `${req.brand} Genuine Component: ${req.part_name}`,
-            qty: 1,
-            unitPrice: 0,
-          },
-        ],
+        products: parts.map((part, idx) => ({
+          partNumber: `${req.brand.slice(0, 3).toUpperCase()}-P${idx + 1}`,
+          productName: `${req.brand} Genuine Component: ${part}`,
+          qty: 1,
+          unitPrice: 0,
+        })),
         notes: req.notes || '',
         sourceRequestId: req.id,
         sourceType: 'spare_parts',
