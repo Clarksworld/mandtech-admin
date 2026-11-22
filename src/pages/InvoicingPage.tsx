@@ -716,7 +716,7 @@ Our engineering desk is on standby to facilitate mobilization.
         : cleanPhone;
 
       // PDF URL for this invoice (served from backend)
-      const API_BASE = 'https://mandtech-backend-1chv.vercel.app';
+      const API_BASE = 'https://mandtech-backend-rho.vercel.app';
       const pdfUrl = `${API_BASE}/api/admin/invoices/${res.data.id}/pdf`;
 
       // Enrich WhatsApp message with PDF download link

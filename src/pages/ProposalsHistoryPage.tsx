@@ -190,7 +190,7 @@ For technical clarifications or mobilization dispatch:
       ? cleanPhone
       : cleanPhone;
 
-    const API_BASE = 'https://mandtech-backend-1chv.vercel.app';
+    const API_BASE = 'https://mandtech-backend-rho.vercel.app';
     const pdfUrl = `${API_BASE}/api/admin/invoices/${inv.id}/pdf`;
     const whatsappText = formatWhatsAppText(inv);
     const whatsappTextWithPdf = `${whatsappText}\n\n📄 *Download Official PDF Quotation:*\n${pdfUrl}`;
