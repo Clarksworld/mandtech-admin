@@ -81,7 +81,7 @@ function generateDocNumber(mode: TemplateMode, _type: 'INVOICE' | 'QUOTATION' = 
   const yearSuffix = d.getFullYear().toString().slice(-2);
   const month = (d.getMonth() + 1).toString().padStart(2, '0');
   const day = d.getDate().toString().padStart(2, '0');
-  const rand = Math.floor(10 + Math.random() * 90);
+  const rand = Math.floor(1000 + Math.random() * 9000);
 
   if (mode === 'leasing') {
     return `ELC0${yearSuffix}${month}${day}-${rand}`;
