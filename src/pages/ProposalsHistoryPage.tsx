@@ -13,6 +13,49 @@ interface ProposalsHistoryPageProps {
   onEditInBuilder?: (invoice: Invoice) => void;
 }
 
+export type ProposalSourceType =
+  | 'all'
+  | 'compressor'
+  | 'order'
+  | 'spare_parts'
+  | 'leasing'
+  | 'lubricants'
+  | 'enquiry'
+  | 'direct';
+
+export interface SourceMeta {
+  key: ProposalSourceType;
+  label: string;
+  badgeClass: string;
+  icon: string;
+}
+
+export function getInvoiceSourceMeta(inv: Invoice): SourceMeta {
+  const notes = inv.notes || '';
+  const ref = (inv.client_ref || '').toUpperCase();
+  const docNo = (inv.invoice_number || '').toUpperCase();
+
+  if (notes.includes('[Source: compressor]') || ref.startsWith('CMP-') || ref.startsWith('CR-')) {
+    return { key: 'compressor', label: 'Compressor Request', badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300', icon: 'mode_fan' };
+  }
+  if (notes.includes('[Source: order]') || ref.startsWith('ORD-') || ref.startsWith('YARD-')) {
+    return { key: 'order', label: 'Yard Requisition', badgeClass: 'bg-blue-50 text-blue-800 border-blue-300', icon: 'local_shipping' };
+  }
+  if (notes.includes('[Source: spare_parts]') || ref.startsWith('SPR-') || ref.startsWith('PART-')) {
+    return { key: 'spare_parts', label: 'Spare Parts', badgeClass: 'bg-purple-50 text-purple-800 border-purple-300', icon: 'build' };
+  }
+  if (notes.includes('[Source: leasing]') || ref.startsWith('LSE-') || ref.startsWith('LR-') || docNo.startsWith('ELC')) {
+    return { key: 'leasing', label: 'Leasing & Rental', badgeClass: 'bg-amber-50 text-amber-800 border-amber-300', icon: 'car_rental' };
+  }
+  if (notes.includes('[Source: lubricants]') || ref.startsWith('LUB-')) {
+    return { key: 'lubricants', label: 'Lubricants & Fluids', badgeClass: 'bg-teal-50 text-teal-800 border-teal-300', icon: 'water_drop' };
+  }
+  if (notes.includes('[Source: enquiry]') || ref.startsWith('ENQ-')) {
+    return { key: 'enquiry', label: 'General Enquiry', badgeClass: 'bg-indigo-50 text-indigo-800 border-indigo-300', icon: 'mail' };
+  }
+  return { key: 'direct', label: 'Direct Quote', badgeClass: 'bg-slate-100 text-slate-700 border-slate-300', icon: 'request_quote' };
+}
+
 export default function ProposalsHistoryPage({
   searchQuery: externalSearch = '',
   onNavigate,
@@ -24,6 +67,7 @@ export default function ProposalsHistoryPage({
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<ProposalSourceType>('all');
   const [searchTerm, setSearchTerm] = useState(externalSearch);
 
   // Modal / Drawer state for viewing & updating status
@@ -87,6 +131,27 @@ export default function ProposalsHistoryPage({
     return { total, sent, draft, paid, totalValue };
   }, [invoices]);
 
+  // Source Type counts
+  const sourceCounts = useMemo(() => {
+    const counts: Record<ProposalSourceType, number> = {
+      all: invoices.length,
+      compressor: 0,
+      order: 0,
+      spare_parts: 0,
+      leasing: 0,
+      lubricants: 0,
+      enquiry: 0,
+      direct: 0,
+    };
+    invoices.forEach((inv) => {
+      const meta = getInvoiceSourceMeta(inv);
+      if (meta.key in counts) {
+        counts[meta.key]++;
+      }
+    });
+    return counts;
+  }, [invoices]);
+
   // Filtered List
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
@@ -97,13 +162,17 @@ export default function ProposalsHistoryPage({
         inv.company?.toLowerCase().includes(q) ||
         inv.contact_name?.toLowerCase().includes(q) ||
         inv.email?.toLowerCase().includes(q) ||
+        inv.client_ref?.toLowerCase().includes(q) ||
+        inv.notes?.toLowerCase().includes(q) ||
         inv.billing_address?.toLowerCase().includes(q);
 
       const matchStatus = statusFilter === 'all' || inv.status === statusFilter;
+      const meta = getInvoiceSourceMeta(inv);
+      const matchSource = sourceFilter === 'all' || meta.key === sourceFilter;
 
-      return matchSearch && matchStatus;
+      return matchSearch && matchStatus && matchSource;
     });
-  }, [invoices, searchTerm, statusFilter]);
+  }, [invoices, searchTerm, statusFilter, sourceFilter]);
 
   // Status Updater
   const handleUpdateStatus = async (invoiceId: string, newStatus: string) => {
@@ -381,6 +450,51 @@ For technical clarifications or mobilization dispatch:
 
       {/* Main Table Card */}
       <div className="bg-surface-white border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+        {/* Department Source Filter Tabs */}
+        <div className="px-4 pt-4 sm:px-5 sm:pt-5 border-b border-outline-variant bg-surface-container-low/30">
+          <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-none">
+            <span className="text-[11px] font-bold text-secondary uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm">filter_alt</span> Department:
+            </span>
+            {(
+              [
+                { id: 'all' as ProposalSourceType, label: 'All Sources', icon: 'apps' },
+                { id: 'compressor' as ProposalSourceType, label: 'Compressor Requests', icon: 'mode_fan' },
+                { id: 'order' as ProposalSourceType, label: 'Yard Requisitions', icon: 'local_shipping' },
+                { id: 'spare_parts' as ProposalSourceType, label: 'Spare Parts', icon: 'build' },
+                { id: 'leasing' as ProposalSourceType, label: 'Leasing & Rentals', icon: 'car_rental' },
+                { id: 'lubricants' as ProposalSourceType, label: 'Lubricants & Fluids', icon: 'water_drop' },
+                { id: 'enquiry' as ProposalSourceType, label: 'Enquiries', icon: 'mail' },
+                { id: 'direct' as ProposalSourceType, label: 'Direct Quotes', icon: 'request_quote' },
+              ] as const
+            ).map((src) => {
+              const isSelected = sourceFilter === src.id;
+              const count = sourceCounts[src.id] || 0;
+              return (
+                <button
+                  key={src.id}
+                  onClick={() => setSourceFilter(src.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
+                    isSelected
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'bg-white border border-outline-variant text-secondary hover:text-deep-charcoal hover:bg-surface-container'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-sm">{src.icon}</span>
+                  <span>{src.label}</span>
+                  <span
+                    className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                      isSelected ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Table Filters & Search */}
         <div className="p-4 sm:p-5 border-b border-outline-variant flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 bg-surface-container-low/40">
           {/* Status Pills */}
@@ -413,7 +527,7 @@ For technical clarifications or mobilization dispatch:
             </span>
             <input
               type="text"
-              placeholder="Search by doc no, company, contact, email..."
+              placeholder="Search by doc no, company, contact, ref..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-8 py-2 bg-white border border-outline-variant rounded-lg text-xs font-medium text-deep-charcoal outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
@@ -466,6 +580,7 @@ For technical clarifications or mobilization dispatch:
               <thead>
                 <tr className="border-b border-outline-variant bg-surface-container-low/70 text-[10.5px] font-bold text-secondary uppercase tracking-wider">
                   <th className="py-3 px-4">Doc No.</th>
+                  <th className="py-3 px-4">Origin &amp; Ref</th>
                   <th className="py-3 px-4">Date</th>
                   <th className="py-3 px-4">Client / Company</th>
                   <th className="py-3 px-4">Contact Info</th>
@@ -475,30 +590,47 @@ For technical clarifications or mobilization dispatch:
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/60">
-                {filteredInvoices.map((inv) => (
-                  <tr
-                    key={inv.id}
-                    onClick={() => setSelectedProposal(inv)}
-                    className="hover:bg-primary/5 transition-colors cursor-pointer group"
-                  >
-                    {/* Doc No & Type */}
-                    <td className="py-3.5 px-4 font-mono font-bold text-primary group-hover:underline">
-                      <div className="flex flex-col">
-                        <span>{inv.invoice_number}</span>
-                        <span className="text-[10px] font-sans font-bold text-secondary uppercase">
-                          {inv.doc_type || 'Quotation'}
-                        </span>
-                      </div>
-                    </td>
+                {filteredInvoices.map((inv) => {
+                  const meta = getInvoiceSourceMeta(inv);
+                  return (
+                    <tr
+                      key={inv.id}
+                      onClick={() => setSelectedProposal(inv)}
+                      className="hover:bg-primary/5 transition-colors cursor-pointer group"
+                    >
+                      {/* Doc No & Type */}
+                      <td className="py-3.5 px-4 font-mono font-bold text-primary group-hover:underline">
+                        <div className="flex flex-col">
+                          <span>{inv.invoice_number}</span>
+                          <span className="text-[10px] font-sans font-bold text-secondary uppercase">
+                            {inv.doc_type || 'Quotation'}
+                          </span>
+                        </div>
+                      </td>
 
-                    {/* Date */}
-                    <td className="py-3.5 px-4 text-secondary whitespace-nowrap">
-                      {new Date(inv.created_at).toLocaleDateString('en-GB', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </td>
+                      {/* Origin Source & Ref */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="flex flex-col items-start gap-1">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${meta.badgeClass}`}>
+                            <span className="material-symbols-outlined text-[13px]">{meta.icon}</span>
+                            <span>{meta.label}</span>
+                          </span>
+                          {inv.client_ref && (
+                            <span className="text-[10.5px] font-mono text-secondary font-semibold">
+                              Ref: {inv.client_ref}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Date */}
+                      <td className="py-3.5 px-4 text-secondary whitespace-nowrap">
+                        {new Date(inv.created_at).toLocaleDateString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
 
                     {/* Company */}
                     <td className="py-3.5 px-4">
@@ -556,7 +688,8 @@ For technical clarifications or mobilization dispatch:
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>
@@ -580,13 +713,22 @@ For technical clarifications or mobilization dispatch:
                   <span className="material-symbols-outlined text-2xl">receipt_long</span>
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-lg font-black text-deep-charcoal">
                       {selectedProposal.invoice_number}
                     </h3>
                     <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-primary text-white">
                       {selectedProposal.doc_type || 'Quotation'}
                     </span>
+                    {(() => {
+                      const meta = getInvoiceSourceMeta(selectedProposal);
+                      return (
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${meta.badgeClass}`}>
+                          <span className="material-symbols-outlined text-[13px]">{meta.icon}</span>
+                          <span>{meta.label}</span>
+                        </span>
+                      );
+                    })()}
                   </div>
                   <p className="text-secondary text-xs">
                     Issued on {new Date(selectedProposal.created_at).toLocaleDateString('en-GB', {

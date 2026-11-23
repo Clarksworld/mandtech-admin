@@ -248,62 +248,78 @@ export default function SparePartsRequestsPage({ onNavigate: _onNavigate, onPrep
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Brand Filter */}
-          <div className="flex items-center gap-1.5 bg-gray-50 border border-outline-variant rounded-lg px-2.5 py-1.5 text-sm">
-            <span className="text-xs font-bold text-gray-400 uppercase">Brand:</span>
-            <select
-              value={brandFilter}
-              onChange={(e) => {
-                setBrandFilter(e.target.value);
+      <div className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm space-y-3">
+        {/* Status Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {[
+            { id: 'all', label: 'All Requests', count: stats?.total ?? 0 },
+            { id: 'new', label: 'Action Needed', count: stats?.new ?? 0 },
+            { id: 'contacted', label: 'Contacted', count: stats?.contacted ?? 0 },
+            { id: 'quoted', label: 'Quoted', count: stats?.quoted ?? 0 },
+            { id: 'closed', label: 'Closed', count: stats?.closed ?? 0 },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setStatusFilter(tab.id);
                 setPage(1);
               }}
-              className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                statusFilter === tab.id
+                  ? 'bg-deep-charcoal text-white shadow-sm'
+                  : 'bg-gray-50 border border-outline-variant text-secondary hover:text-deep-charcoal hover:bg-gray-100'
+              }`}
             >
-              <option value="all">All Brands</option>
-              <option value="ATLAS COPCO">Atlas Copco</option>
-              <option value="SULLAIR">Sullair</option>
-              <option value="INGERSOLL RAND">Ingersoll Rand</option>
-              <option value="DENAIR">Denair</option>
-            </select>
-          </div>
-
-          {/* Status Filter */}
-          <div className="flex items-center gap-1.5 bg-gray-50 border border-outline-variant rounded-lg px-2.5 py-1.5 text-sm">
-            <span className="text-xs font-bold text-gray-400 uppercase">Status:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPage(1);
-              }}
-              className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer"
-            >
-              <option value="all">All Statuses</option>
-              <option value="new">New</option>
-              <option value="contacted">Contacted</option>
-              <option value="quoted">Quoted</option>
-              <option value="closed">Closed</option>
-            </select>
-          </div>
+              <span>{tab.label}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  statusFilter === tab.id ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
         </div>
 
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder="Search by company, email, part name…"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-            }}
-            className="w-full pl-9 pr-4 py-1.5 bg-gray-50 border border-outline-variant rounded-lg text-sm text-gray-800 focus:outline-none focus:border-primary focus:bg-white transition-all"
-          />
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 pt-1 border-t border-gray-100">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Brand Filter */}
+            <div className="flex items-center gap-1.5 bg-gray-50 border border-outline-variant rounded-lg px-2.5 py-1.5 text-sm">
+              <span className="text-xs font-bold text-gray-400 uppercase">Brand:</span>
+              <select
+                value={brandFilter}
+                onChange={(e) => {
+                  setBrandFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="bg-transparent text-gray-800 font-medium focus:outline-none cursor-pointer"
+              >
+                <option value="all">All Brands</option>
+                <option value="ATLAS COPCO">Atlas Copco</option>
+                <option value="SULLAIR">Sullair</option>
+                <option value="INGERSOLL RAND">Ingersoll Rand</option>
+                <option value="DENAIR">Denair</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">
+              search
+            </span>
+            <input
+              type="text"
+              placeholder="Search by company, email, part name…"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1);
+              }}
+              className="w-full pl-9 pr-4 py-1.5 bg-gray-50 border border-outline-variant rounded-lg text-sm text-gray-800 focus:outline-none focus:border-primary focus:bg-white transition-all"
+            />
+          </div>
         </div>
       </div>
 

@@ -7,6 +7,12 @@ import {
   Invoice,
   LineItem as ServiceLineItem,
 } from '../services/invoicingService';
+import { updateCompressorRequestStatus } from '../services/compressorRequestsService';
+import { updateSparePartsRequestStatus } from '../services/sparePartsRequestsService';
+import { updateLeasingRequestStatus } from '../services/leasingRequestsService';
+import { updateLubricantRequestStatus } from '../services/lubricantsRequestsService';
+import { ordersService } from '../services/ordersService';
+import { updateInquiryStatus } from '../services/enquiriesService';
 import { MandtechLogo } from '../components/Logo';
 import { BrandLogosFooter, DEFAULT_PARTNERS, type PartnerBrand } from '../components/BrandLogosFooter';
 import { numberToWordsNaira } from '../utils/numberToWords';
@@ -573,6 +579,44 @@ export default function InvoicingPage({ initialData, onClearInitialData, onNavig
     }
   };
 
+  // Sync quotation dispatch status back to originating department request
+  const syncQuotationStatusToSource = async (
+    sourceType: string | undefined,
+    sourceRequestId: string | undefined,
+    docNumber: string
+  ) => {
+    if (!sourceType || !sourceRequestId) return;
+    const note = `Official quotation ${docNumber} generated and dispatched to client.`;
+    try {
+      switch (sourceType) {
+        case 'compressor':
+          await updateCompressorRequestStatus(sourceRequestId, 'quoted', note);
+          break;
+        case 'spare_parts':
+          await updateSparePartsRequestStatus(sourceRequestId, 'quoted', note);
+          break;
+        case 'leasing':
+          await updateLeasingRequestStatus(sourceRequestId, 'quoted', note);
+          break;
+        case 'lubricants':
+          await updateLubricantRequestStatus(sourceRequestId, 'quoted', note);
+          break;
+        case 'order':
+          await ordersService.updateStatus(sourceRequestId, {
+            status: 'confirmed',
+            title: 'Quotation Dispatched & Confirmed',
+            description: `Official quotation ${docNumber} dispatched to customer`,
+          });
+          break;
+        case 'enquiry':
+          await updateInquiryStatus(sourceRequestId, 'responded');
+          break;
+      }
+    } catch (err) {
+      console.warn(`[SyncStatus] Failed to update source ${sourceType} (${sourceRequestId}):`, err);
+    }
+  };
+
   // Save to backend database
   const handleSaveToDatabase = async (status: 'draft' | 'sent') => {
     if (!companyName.trim()) {
@@ -595,6 +639,7 @@ export default function InvoicingPage({ initialData, onClearInitialData, onNavig
     }));
 
     try {
+      const structuredNotes = `[Source: ${initialData?.sourceType || 'direct'}${initialData?.sourceRequestId ? ` | ID: ${initialData.sourceRequestId}` : ''}] Scope: ${tableScopeTitle}. Ref: ${yourRef}`;
       const res = await createInvoice({
         doc_type: templateMode === 'leasing' ? 'quotation' : 'invoice',
         invoice_number: documentNo.trim(),
@@ -613,9 +658,13 @@ export default function InvoicingPage({ initialData, onClearInitialData, onNavig
         vat_rate_pct: 7.5,
         delivery_terms: templateMode === 'leasing' ? 'Customer Mobilization' : 'Delivered within 21 days',
         currency: 'NGN',
-        notes: `Scope: ${tableScopeTitle}. Ref: ${yourRef}`,
+        notes: structuredNotes,
         status,
       });
+
+      if (status === 'sent' && initialData?.sourceRequestId && initialData?.sourceType) {
+        await syncQuotationStatusToSource(initialData.sourceType, initialData.sourceRequestId, res.data.invoice_number);
+      }
 
       setSaveSuccessMsg(`Document ${res.data.invoice_number} saved to database as ${status.toUpperCase()}!`);
       loadPastInvoices();
@@ -653,6 +702,7 @@ export default function InvoicingPage({ initialData, onClearInitialData, onNavig
     }));
 
     try {
+      const structuredNotes = `[Source: ${initialData?.sourceType || 'direct'}${initialData?.sourceRequestId ? ` | ID: ${initialData.sourceRequestId}` : ''}] Scope: ${tableScopeTitle}. Ref: ${yourRef}`;
       const res = await createInvoice({
         doc_type: templateMode === 'leasing' ? 'quotation' : 'invoice',
         invoice_number: documentNo.trim(),
@@ -671,9 +721,14 @@ export default function InvoicingPage({ initialData, onClearInitialData, onNavig
         vat_rate_pct: 7.5,
         delivery_terms: templateMode === 'leasing' ? 'Customer Mobilization' : 'Delivered within 21 days',
         currency: 'NGN',
-        notes: `Scope: ${tableScopeTitle}. Ref: ${yourRef}`,
+        notes: structuredNotes,
         status: 'sent',
       });
+
+      // Synchronize quotation status back to originating request (compressor, parts, order, etc.)
+      if (initialData?.sourceRequestId && initialData?.sourceType) {
+        await syncQuotationStatusToSource(initialData.sourceType, initialData.sourceRequestId, res.data.invoice_number);
+      }
 
       // Construct WhatsApp message
       const linesSummary = activeRows

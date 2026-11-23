@@ -219,7 +219,40 @@ export default function LeasingRequestsPage({ onNavigate: _onNavigate, onPrepare
 
       {/* Filter and Search Bar */}
       <div className="bg-white border border-outline-variant rounded-xl p-4 shadow-sm space-y-3">
-        <div className="flex flex-col md:flex-row gap-3">
+        {/* Status Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {[
+            { id: 'all', label: 'All Requests', count: stats?.total ?? 0 },
+            { id: 'new', label: 'Action Needed', count: stats?.new ?? 0 },
+            { id: 'contacted', label: 'Contacted', count: stats?.contacted ?? 0 },
+            { id: 'quoted', label: 'Quoted', count: stats?.quoted ?? 0 },
+            { id: 'closed', label: 'Closed', count: stats?.closed ?? 0 },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setStatusFilter(tab.id);
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+                statusFilter === tab.id
+                  ? 'bg-deep-charcoal text-white shadow-sm'
+                  : 'bg-gray-50 border border-outline-variant text-secondary hover:text-deep-charcoal hover:bg-gray-100'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  statusFilter === tab.id ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-3 pt-1 border-t border-gray-100">
           {/* Search Box */}
           <div className="relative flex-1">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">
@@ -265,22 +298,6 @@ export default function LeasingRequestsPage({ onNavigate: _onNavigate, onPrepare
             <option value="SULLAIR">Sullair</option>
             <option value="INGERSOLL RAND">Ingersoll Rand</option>
             <option value="DENAIR">Denair</option>
-          </select>
-
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="border border-outline-variant rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:border-primary outline-none"
-          >
-            <option value="all">All Statuses</option>
-            <option value="new">New</option>
-            <option value="contacted">Contacted</option>
-            <option value="quoted">Quoted</option>
-            <option value="closed">Closed</option>
           </select>
         </div>
       </div>
