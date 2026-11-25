@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getStoredUser, logoutAdmin } from '../services/authService';
 import { MandtechLogo } from './Logo';
+import NotificationSettingsModal from './NotificationSettingsModal';
 
 export type TabType = 'dashboard' | 'customer-dms' | 'orders' | 'compressor-requests' | 'spare-parts-requests' | 'leasing-requests' | 'lubricant-requests' | 'enquiries' | 'leads' | 'inventory' | 'invoicing' | 'proposals';
 
@@ -23,6 +24,7 @@ export default function Layout({
 }: LayoutProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [notificationActive, setNotificationActive] = useState(true);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const currentUser = getStoredUser();
 
@@ -134,18 +136,27 @@ export default function Layout({
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <button 
-              onClick={() => setNotificationActive(false)}
-              className="relative p-2 text-secondary hover:text-primary transition-colors"
+              onClick={() => {
+                setNotificationActive(false);
+                setShowSettingsModal(true);
+              }}
+              title="Storefront Request Email Alerts & Notification Settings"
+              className="relative p-2 text-secondary hover:text-primary hover:bg-surface-container rounded-lg transition-colors"
             >
               <span className="material-symbols-outlined">notifications</span>
               {notificationActive && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full animate-pulse"></span>
               )}
             </button>
-            <button className="p-2 text-secondary hover:text-primary transition-colors">
+            <button 
+              onClick={() => setShowSettingsModal(true)}
+              title="Configure Alert Recipient Emails"
+              className="p-2 text-secondary hover:text-primary hover:bg-surface-container rounded-lg transition-colors flex items-center gap-1.5"
+            >
               <span className="material-symbols-outlined">settings</span>
+              <span className="hidden lg:inline text-xs font-bold text-deep-charcoal">Alert Emails</span>
             </button>
           </div>
           <div className="h-6 w-px bg-outline-variant"></div>
@@ -169,6 +180,12 @@ export default function Layout({
           {children}
         </div>
       </main>
+
+      {/* Admin Notification Settings Modal */}
+      <NotificationSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
     </div>
   );
 }
